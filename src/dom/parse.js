@@ -354,7 +354,18 @@ wysihtml5.dom.parse = (function() {
       }
     }
   }
-  
+
+  function _filterTextBasedOnRules(text, rules) {
+    if (rules.length <= 0 || text.length <= 0) {
+      return text;
+    } else {
+      return _filterTextBasedOnRules(
+        text.replace(rules[0].rule, rules[0].replace),
+        rules.slice(1, rules.length)
+      )
+    }
+  }
+
   var INVISIBLE_SPACE_REG_EXP = /\uFEFF/g;
   function _handleText(oldNode) {
     var nextSibling = oldNode.nextSibling;
@@ -364,7 +375,8 @@ wysihtml5.dom.parse = (function() {
     } else {
       // \uFEFF = wysihtml5.INVISIBLE_SPACE (used as a hack in certain rich text editing situations)
       var data = oldNode.data.replace(INVISIBLE_SPACE_REG_EXP, "");
-      return oldNode.ownerDocument.createTextNode(data);
+      return oldNode.ownerDocument.createTextNode(
+        _filterTextBasedOnRules(data, currentRules.parser));
     } 
   }
   
