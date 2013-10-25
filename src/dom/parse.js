@@ -65,7 +65,7 @@ wysihtml5.dom.parse = (function() {
       // Rename unknown tags to this
       DEFAULT_NODE_NAME   = "span",
       WHITE_SPACE_REG_EXP = /\s+/,
-      defaultRules        = { tags: {}, classes: {} },
+      defaultRules        = { tags: {}, classes: {}, fix:[], deny:[], parser:[] },
       currentRules        = {};
   
   /**
