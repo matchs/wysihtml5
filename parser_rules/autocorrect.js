@@ -566,7 +566,7 @@ var wysihtml5ParserRules = {
     },
     {
       "rule": /\s{2,}/g,
-      "replace": " "
+      "replace": "$1"
     },
     {
       "rule": /\,\S/g,
