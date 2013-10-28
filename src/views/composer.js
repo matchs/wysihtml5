@@ -184,6 +184,19 @@
       this._initUndoManager();
       this._initLineBreaking();
 
+      if(that.config.autoFormat){
+        this._initAutoFormatting();
+      }
+
+      // Puts the cursor imediatly after the current selected block
+      this.repositionCaretOnEndOfBlock = function(element){
+        if (!browser.displaysCaretInEmptyContentEditableCorrectly()) {
+          that.selection.setAfter(element);
+        } else {
+          that.selection.selectNode(element, true);
+        }
+      }
+
       // Simulate html5 autofocus on contentEditable element
       // This doesn't work on IOS (5.1.1)
       if ((this.textarea.element.hasAttribute("autofocus") || document.querySelector(":focus") == this.textarea.element) && !browser.isIos()) {
@@ -347,11 +360,7 @@
         currentNode.parentNode.insertBefore(hr, currentNode.nextSibling);
         hr.parentNode.insertBefore(p, hr.nextSibling);
 
-        if (!browser.displaysCaretInEmptyContentEditableCorrectly()) {
-          that.selection.setAfter(p);
-        } else {
-          that.selection.selectNode(p, true);
-        }
+        that.repositionCaretOnEndOfBlock(p);
 
         currentNode.remove();
       }
@@ -440,6 +449,26 @@
         if (that.config.useLineBreaks && keyCode === wysihtml5.ENTER_KEY && !wysihtml5.browser.insertsLineBreaksOnReturn()) {
           that.commands.exec("insertLineBreak");
           event.preventDefault();
+        }
+      });
+    },
+
+    _initAutoFormatting: function () {
+      var that                              = this,
+        USE_NATIVE_LINE_BREAK_INSIDE_TAGS = ["LI", "P", "H1", "H2", "H3", "H4", "H5", "H6"];
+
+      dom.observe(this.element, "keydown", function (event) {
+        var blockElement = dom.getParentElement(that.selection.getSelectedNode(), { nodeName: USE_NATIVE_LINE_BREAK_INSIDE_TAGS }, 4);
+
+        if(event.keyCode == wysihtml5.ENTER_KEY && blockElement && blockElement.nodeName === "P"){
+          setTimeout(function(){
+            blockElement.innerText = blockElement.innerText.replace(/^\s*[a-zçáàéèíìóòúùñãõüïâêîôû]/,function(match){
+              return match.toUpperCase();
+            }).replace(/[ ]+$/,'')
+              .replace(/[^!?.:;\s]$/g,"$&.");
+
+            that.repositionCaretOnEndOfBlock(that.selection.getSelectedNode());
+          },0);
         }
       });
     }

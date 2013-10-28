@@ -61,7 +61,9 @@
     // Whether senseless <span> elements (empty or without attributes) should be removed/replaced with their content
     cleanUp:              true,
     // Auto inserts <hr> elements after two consecutive line breaks
-    autoInsertHR:         true
+    autoInsertHR:         true,
+    // Auto formats capitalization and punctuation
+    autoFormat:          true
   };
   
   wysihtml5.Editor = wysihtml5.lang.Dispatcher.extend(
