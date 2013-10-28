@@ -172,7 +172,10 @@
             .on("redo:composer", function () {
                 log.innerHTML += "<div>redo:composer</div>";
             })
-            .on("deny:composer", function () {
-                log.innerHTML += "<div>deny:composer</div>";
-            });
+            .on("deny:composer", function (data) {
+                log.innerHTML += "<div>deny:composer with msg '" + data.rule.msg + "' on text '" + data.text + "'</div>";
+            })
+            .on("fix:composer", function (data) {
+                log.innerHTML += "<div>fix:composer turned '" + data.text + "' onto '" + data.fixed + "'</div>";
+            })
 </script>

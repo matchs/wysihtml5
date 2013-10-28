@@ -95,7 +95,13 @@
         return false;
       } else if (txt.match(rules[0].rule) !== null) {
         event.preventDefault();
-        that.commands.exec("insertHTML", rules[0].fix(char));
+        var fixed = rules[0].fix(char);
+        that.commands.exec("insertHTML", fixed);
+        that.parent.fire("fix:composer", {
+          rule:rules[0],
+          text:char,
+          fixed:rules[0].fix(char)
+        });
         return;
       } else {
         return this._applyFixRules(rules.slice(1, rules.length), txt, char, event);
