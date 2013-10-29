@@ -188,13 +188,15 @@
         this._initAutoFormatting();
       }
 
-      // Puts the cursor imediatly after the current selected block
-      this.repositionCaretOnEndOfBlock = function(element){
+      // Puts the caret immediately after the given node
+      this.repositionCaretAt = function(element){
         if (!browser.displaysCaretInEmptyContentEditableCorrectly()) {
           that.selection.setAfter(element);
         } else {
           that.selection.selectNode(element, true);
         }
+
+        return element;
       }
 
       // Simulate html5 autofocus on contentEditable element
@@ -351,19 +353,68 @@
         }
       }
 
-      // Replaces a given node with a <hr> node and creates a paragraph after it
-      function replaceWithHorizontalRule(currentNode) {
-        var hr = that.doc.createElement('hr');
+      // Inserts a set of nodes sequentially after currentNode
+      function insertNodes(currentNode, nodes){
+        if(nodes.length <= 0) {
+          return currentNode;
+        }
+        currentNode.parentNode.insertBefore(nodes[0], currentNode.nextSibling);
+        return insertNodes(nodes[0], nodes.slice(1, nodes.length));
+      }
+
+      // Creates a new empty <p> element
+      function makeEmptyParagraph(){
         var p = that.doc.createElement('p');
         p.appendChild(that.doc.createElement('br'));
 
-        currentNode.parentNode.insertBefore(hr, currentNode.nextSibling);
-        hr.parentNode.insertBefore(p, hr.nextSibling);
-
-        that.repositionCaretOnEndOfBlock(p);
-
-        currentNode.remove();
+        return p;
       }
+
+      // Replaces a given node with a set of given nodes
+      function replaceNodeWith(currentNode, nodes) {
+        var node = insertNodes(currentNode, nodes);
+        currentNode.remove();
+
+        return node;
+      }
+
+      var shouldPutHR = (function(){
+        if(that.config.autoInsertHR){
+          return function (currentNode){
+            var nextSibling = currentNode.nextSibling || false,
+              prevSibling = currentNode.previousSibling || false;
+
+            if (nextSibling.nodeName == "HR" || prevSibling.previousSibling && prevSibling.previousSibling.nodeName == "HR") { //If there's one hr already
+              return false;
+            }
+
+            return true;
+          }
+        } else {
+          return function(currentNode){
+            return false;
+          }
+        }
+      })();
+
+      // Checks if it should open or not a new paragraph when key enter is hit
+      var shouldOpenNewParagraph = (function(){
+          var ENTER_KEY = wysihtml5.ENTER_KEY;
+
+          return function (currentNode, keyCode){
+            var nextSibling = currentNode.nextSibling || false,
+              prevSibling = currentNode.previousSibling || false;
+
+            if (keyCode === ENTER_KEY
+              && (currentNode.nodeName === "P" && currentNode.innerText.replace(/\s|\r|\n/g, '').length === 0) //Checking for empty paragrapsh
+              && ((nextSibling && nextSibling.nodeName === "P" && nextSibling.innerText.replace(/\s|\r|\n/g, '').length === 0) //After current paragraph
+              || (prevSibling && prevSibling.nodeName === "P" && prevSibling.innerText.replace(/\s|\r|\n/g, '').length === 0))) {//Before current paragraph
+
+              return false;
+            }
+            return true;
+          }
+      })();
 
       if (!this.config.useLineBreaks) {
         dom.observe(this.element, ["focus", "keydown"], function() {
@@ -404,22 +455,22 @@
 
         var blockElement = dom.getParentElement(that.selection.getSelectedNode(), { nodeName: USE_NATIVE_LINE_BREAK_INSIDE_TAGS }, 4);
         if (blockElement) {
-          var nextSibling = blockElement.nextSibling || false,
-            prevSibling = blockElement.previousSibling || false;
 
-          if (that.config.autoInsertHR && keyCode === wysihtml5.ENTER_KEY
-            && (blockElement.nodeName === "P" && blockElement.innerText.replace(/\s|\r|\n/g, '').length === 0) //Checking for empty paragrapsh
-            && ((nextSibling && nextSibling.nodeName === "P" && nextSibling.innerText.replace(/\s|\r|\n/g, '').length === 0) //After current paragraph
-            || (prevSibling && prevSibling.nodeName === "P" && prevSibling.innerText.replace(/\s|\r|\n/g, '').length === 0))) {//Before current paragraph
-
+          if(!shouldOpenNewParagraph(blockElement, keyCode)){
             event.preventDefault();
 
-            if (nextSibling.nodeName == "HR" || prevSibling.previousSibling && prevSibling.previousSibling.nodeName == "HR") { //If there's one hr already
+            if(shouldPutHR(blockElement)){
+              var hr = that.doc.createElement('hr');
+              var p = makeEmptyParagraph();
+
+              that.repositionCaretAt(replaceNodeWith(blockElement,[hr, p]));
               return;
             }
+          } else if (!that.config.shiftEnterEnabled && event.shiftKey && keyCode == wysihtml5.ENTER_KEY) {
+            event.preventDefault();
+            var p = makeEmptyParagraph();
 
-            replaceWithHorizontalRule(blockElement);
-            return;
+            that.repositionCaretAt(insertNodes(blockElement,[p]));
           }
 
           setTimeout(function() {
@@ -467,7 +518,7 @@
             }).replace(/[ ]+$/,'')
               .replace(/[^!?.:;\s]$/g,"$&.");
 
-            that.repositionCaretOnEndOfBlock(that.selection.getSelectedNode());
+            that.repositionCaretAt(that.selection.getSelectedNode());
           },0);
         }
       });
