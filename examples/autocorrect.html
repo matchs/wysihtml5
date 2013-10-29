@@ -178,4 +178,7 @@
             .on("fix:composer", function (data) {
                 log.innerHTML += "<div>fix:composer turned '" + data.text + "' onto '" + data.fixed + "'</div>";
             })
+            .on("alertUpper:composer", function(data){
+                log.innerHTML += "<div>alertUpper:composer with ratio '" + data.ratio + "'</div>";
+            })
 </script>

@@ -65,7 +65,11 @@
     // Auto formats capitalization and punctuation
     autoFormat:           true,
     // Enables or disables new line when shift+enter keys are pressed
-    shiftEnterEnabled:    true
+    shiftEnterEnabled:    true,
+    // Emit an event if text has too much upper case words
+    autoCheckCase:        true,
+    // Allowed ratio of upper case characters related to the total text length. Ordered by greater priority first.
+    alertUpperRatio:      [0.6, 0.45]
   };
   
   wysihtml5.Editor = wysihtml5.lang.Dispatcher.extend(

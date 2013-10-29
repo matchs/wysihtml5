@@ -188,6 +188,10 @@
         this._initAutoFormatting();
       }
 
+      if(that.config.autoCheckCase){
+        this._initCheckCase();
+      }
+
       // Puts the caret immediately after the given node
       this.repositionCaretAt = function(element){
         if (!browser.displaysCaretInEmptyContentEditableCorrectly()) {
@@ -519,7 +523,32 @@
               .replace(/[^!?.:;\s]$/g,"$&.");
 
             that.repositionCaretAt(that.selection.getSelectedNode());
-          },0);
+          }, 0);
+        }
+      });
+    },
+
+    _initCheckCase: function () {
+      var that = this;
+      dom.observe(this.element, ["keydown", "blur"], function (event) {
+
+        if (event.type == 'blur' || event.keyCode == wysihtml5.ENTER_KEY) {
+          var innerText = that.element.innerText;
+
+          var match = innerText.match(/[A-ZÇÁÀÉÈÍÌÓÒÚÙÑÃÕÜÏÂÊÎÔÛ]/g);
+          var nUpper = match ? match.length : 0;
+
+          var upperRatio = nUpper / innerText.length;
+          var ratios = that.config.alertUpperRatio;
+
+          for(var i =0; i < ratios.length; i++){
+            if (upperRatio > ratios[i]) {
+              that.parent.fire('alertUpper:composer', {
+                ratio:ratios[i]
+              });
+              return;
+            }
+          }
         }
       });
     }
