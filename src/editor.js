@@ -65,7 +65,7 @@
     // Auto formats capitalization and punctuation
     autoFormat:           true,
     // Enables or disables new line when shift+enter keys are pressed
-    shiftEnterEnabled:    false
+    shiftEnterEnabled:    true
   };
   
   wysihtml5.Editor = wysihtml5.lang.Dispatcher.extend(
