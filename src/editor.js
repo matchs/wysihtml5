@@ -67,9 +67,9 @@
     // Enables or disables new line when shift+enter keys are pressed
     shiftEnterEnabled:    true,
     // Emit an event if text has too much upper case words
-    autoCheckCase:        true,
+    autoCheckCase:        false,
     // Allowed ratio of upper case characters related to the total text length. Ordered by greater priority first.
-    alertUpperRatio:      [0.6, 0.45]
+    alertUpperRatio:      []
   };
   
   wysihtml5.Editor = wysihtml5.lang.Dispatcher.extend(
