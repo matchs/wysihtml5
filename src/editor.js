@@ -63,7 +63,9 @@
     // Auto inserts <hr> elements after two consecutive line breaks
     autoInsertHR:         true,
     // Auto formats capitalization and punctuation
-    autoFormat:          true
+    autoFormat:           true,
+    // Enables or disables new line when shift+enter keys are pressed
+    shiftEnterEnabled:    false
   };
   
   wysihtml5.Editor = wysihtml5.lang.Dispatcher.extend(
