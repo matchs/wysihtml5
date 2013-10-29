@@ -93,7 +93,9 @@ wysihtml5.dom.parse = (function() {
       newNode = _convert(firstChild, cleanUp);
       element.removeChild(firstChild);
       if (newNode) {
-        fragment.appendChild(newNode);
+        if(newNode.innerText.trim().length > 0){
+          fragment.appendChild(newNode);
+        }
       }
     }
     
