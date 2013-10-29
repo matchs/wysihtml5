@@ -142,7 +142,8 @@
         stylesheets: "css/stylesheet.css",
         parserRules: wysihtml5ParserRules,
         useLineBreaks: false,
-        shiftEnterEnabled: false
+        shiftEnterEnabled: false,
+        alertUpperRatio: [0.6, 0.45]
     });
 
     var log = document.getElementById("log");
@@ -179,6 +180,6 @@
                 log.innerHTML += "<div>fix:composer turned '" + data.text + "' onto '" + data.fixed + "'</div>";
             })
             .on("alertUpper:composer", function(data){
-                log.innerHTML += "<div>alertUpper:composer with ratio '" + data.ratio + "'</div>";
+                log.innerHTML += "<div>alertUpper:composer with ratio greater than'" + data.ratio + "'</div>";
             })
 </script>
