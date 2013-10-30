@@ -77,7 +77,7 @@
     this._applyDenyRules = function (rules, txt, event) {
       if (rules.length <= 0) {
         return false;
-      } else if (txt.match(rules[0].rule) !== null) {
+      } else if (rules[0].rule.test(txt)) {
         event.preventDefault();
         that.parent.fire("deny:composer", {
           rule:rules[0],
@@ -93,7 +93,7 @@
     this._applyFixRules = function (rules, txt, char, event) {
       if (rules.length <= 0) {
         return false;
-      } else if (txt.match(rules[0].rule) !== null) {
+      } else if (rules[0].rule.test(txt)) {
         event.preventDefault();
         var fixed = rules[0].fix(char);
         that.commands.exec("insertHTML", fixed);

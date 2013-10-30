@@ -359,7 +359,7 @@ wysihtml5.dom.parse = (function() {
 
   // -------- Apply changes on pasted text -------------
   function _filterTextBasedOnRules(text, rules) {
-    if (rules.length <= 0 || text.length <= 0) {
+    if (rules && (rules.length <= 0 || text.length <= 0)) {
       return text;
     } else {
       return _filterTextBasedOnRules(
