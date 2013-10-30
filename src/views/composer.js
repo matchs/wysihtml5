@@ -341,7 +341,7 @@
 
     _initLineBreaking: function() {
       var that                              = this,
-          USE_NATIVE_LINE_BREAK_INSIDE_TAGS = ["LI", "P", "H1", "H2", "H3", "H4", "H5", "H6"],
+          USE_NATIVE_LINE_BREAK_INSIDE_TAGS = ["LI", "P", "H1", "H2", "H3", "H4", "H5", "H6", "BLOCKQUOTE"],
           LIST_TAGS                         = ["UL", "OL", "MENU"];
 
       function adjust(selectedNode) {
@@ -415,6 +415,9 @@
               || (prevSibling && prevSibling.nodeName === "P" && prevSibling.innerText.replace(/\s|\r|\n/g, '').length === 0))) {//Before current paragraph
 
               return false;
+            } else if(keyCode === ENTER_KEY && currentNode.nodeName === "BLOCKQUOTE" && !that.config.allowLineBreaksInsideQuotes){
+
+              return true;
             }
             return true;
           }
@@ -470,7 +473,7 @@
               that.repositionCaretAt(replaceNodeWith(blockElement,[hr, p]));
               return;
             }
-          } else if (!that.config.shiftEnterEnabled && event.shiftKey && keyCode == wysihtml5.ENTER_KEY) {
+          } else if ((!that.config.shiftEnterEnabled && event.shiftKey && keyCode == wysihtml5.ENTER_KEY) ||  blockElement.nodeName === "BLOCKQUOTE") {
             event.preventDefault();
             var p = makeEmptyParagraph();
 

@@ -69,7 +69,9 @@
     // Emit an event if text has too much upper case words
     autoCheckCase:        false,
     // Allowed ratio of upper case characters related to the total text length. Ordered by greater priority first.
-    alertUpperRatio:      []
+    alertUpperRatio:      [],
+    // Allo
+    allowLineBreaksInsideQuotes: true
   };
   
   wysihtml5.Editor = wysihtml5.lang.Dispatcher.extend(
