@@ -660,7 +660,6 @@ var wysihtml5ParserRules = {
           return ' ' + char;
         }
       }
-
     },
     {
       "rule": /[^.]\.\s\S/i,//Period followed by any non-whitespace character

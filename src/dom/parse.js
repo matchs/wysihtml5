@@ -93,9 +93,7 @@ wysihtml5.dom.parse = (function() {
       newNode = _convert(firstChild, cleanUp);
       element.removeChild(firstChild);
       if (newNode) {
-        if(newNode.innerText.trim().length > 0){
           fragment.appendChild(newNode);
-        }
       }
     }
     
@@ -359,7 +357,7 @@ wysihtml5.dom.parse = (function() {
 
   // -------- Apply changes on pasted text -------------
   function _filterTextBasedOnRules(text, rules) {
-    if (rules && (rules.length <= 0 || text.length <= 0)) {
+    if (!rules || rules.length <= 0 || text.length <= 0) {
       return text;
     } else {
       return _filterTextBasedOnRules(
