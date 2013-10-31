@@ -77,7 +77,7 @@
     this._applyDenyRules = function (rules, txt, event) {
       if (rules.length <= 0) {
         return false;
-      } else if (rules[0].rule.test(txt)) {
+      } else if (txt.match(rules[0].rule)) {
         event.preventDefault();
         that.parent.fire("deny:composer", {
           rule:rules[0],
@@ -112,6 +112,8 @@
     dom.observe(element, "keypress", function (event) {
 
       var str = that._getTextAroundCaret(event.charCode, 3, 3);
+
+
 
       if (that._applyDenyRules(that.config.parserRules.deny, str, event) !== true) {
           that._applyFixRules(that.config.parserRules.fix, str, String.fromCharCode(event.charCode), event);
