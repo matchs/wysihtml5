@@ -517,7 +517,7 @@
 
         if(event.keyCode == wysihtml5.ENTER_KEY && blockElement && blockElement.nodeName === "P"){
           setTimeout(function(){
-            blockElement.innerText = blockElement.innerText.replace(/^\s*[a-zçáàéèíìóòúùñãõüïâêîôû]/,function(match){
+            blockElement.innerText = blockElement.innerText.replace(/^\s*[a-zçáàéèíìóòúùñãõüïâêîôû]/, function(match){
               return match.toUpperCase();
             }).replace(/[ ]+$/,'')
               .replace(/[^!?.:;\s]$/g,"$&.");

@@ -70,8 +70,16 @@
     autoCheckCase:        false,
     // Allowed ratio of upper case characters related to the total text length. Ordered by greater priority first.
     alertUpperRatio:      [],
-    // Allo
-    allowLineBreaksInsideQuotes: true
+    // Allow line breaks inside quotes or only one paragraph
+    allowLineBreaksInsideQuotes: true,
+    // Auto-resizes the iframe according to content
+    autoResize:           false,
+    // Shortcut for cammands
+    shortcuts: {
+      bold: 'b',
+      italic: 'i',
+      underline: 'u'
+    }
   };
   
   wysihtml5.Editor = wysihtml5.lang.Dispatcher.extend(

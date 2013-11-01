@@ -39,17 +39,19 @@
         "width", "height"
       ],
       ADDITIONAL_CSS_RULES = [
-        "html                 { height: 100%; }",
-        "body                 { height: 100%; padding: 1px 0 0 0; margin: -1px 0 0 0; }",
+        //"html                 { height: 100%; }",
+        "html                 { height: 100%; clear:both; overflow:hidden; }",
+        //"body                 { height: 100%; padding: 1px 0 0 0; margin: -1px 0 0 0; }",
+        "body                 { overflow:auto; clear: both; padding: 1px 0 0 0; margin: -1px 0 0 0; }",
         "body > p:first-child { margin-top: 0; }",
         "._wysihtml5-temp     { display: none; }",
         wysihtml5.browser.isGecko ?
-          "body.placeholder { color: graytext !important; }" : 
+          "body.placeholder { color: graytext !important; }" :
           "body.placeholder { color: #a9a9a9 !important; }",
         // Ensure that user see's broken images and can delete them
         "img:-moz-broken      { -moz-force-broken-image-icon: 1; height: 24px; width: 24px; }"
       ];
-  
+
   /**
    * With "setActive" IE offers a smart way of focusing elements without scrolling them into view:
    * http://msdn.microsoft.com/en-us/library/ms536738(v=vs.85).aspx
@@ -73,7 +75,7 @@
             left:             elementStyle.left,
             WebkitUserSelect: elementStyle.WebkitUserSelect
           };
-      
+
       dom.setStyles({
         position:         "absolute",
         top:              "-99999px",
@@ -81,11 +83,11 @@
         // Don't ask why but temporarily setting -webkit-user-select to none makes the whole thing performing smoother
         WebkitUserSelect: "none"
       }).on(element);
-      
+
       element.focus();
-      
+
       dom.setStyles(originalStyles).on(element);
-      
+
       if (win.scrollTo) {
         // Some browser extensions unset this method to prevent annoyances
         // "Better PopUp Blocker" for Chrome http://code.google.com/p/betterpopupblocker/source/browse/trunk/blockStart.js#100
@@ -94,8 +96,8 @@
       }
     }
   };
-  
-  
+
+
   wysihtml5.views.Composer.prototype.style = function() {
     var that                  = this,
         originalActiveElement = doc.querySelector(":focus"),
@@ -105,97 +107,97 @@
         originalDisplayValue  = textareaElement.style.display,
         originalDisabled      = textareaElement.disabled,
         displayValueForCopying;
-    
+
     this.focusStylesHost      = HOST_TEMPLATE.cloneNode(false);
     this.blurStylesHost       = HOST_TEMPLATE.cloneNode(false);
     this.disabledStylesHost   = HOST_TEMPLATE.cloneNode(false);
-  
+
     // Remove placeholder before copying (as the placeholder has an affect on the computed style)
     if (hasPlaceholder) {
       textareaElement.removeAttribute("placeholder");
     }
-  
+
     if (textareaElement === originalActiveElement) {
       textareaElement.blur();
     }
-    
+
     // enable for copying styles
     textareaElement.disabled = false;
-    
+
     // set textarea to display="none" to get cascaded styles via getComputedStyle
     textareaElement.style.display = displayValueForCopying = "none";
-    
+
     if ((textareaElement.getAttribute("rows") && dom.getStyle("height").from(textareaElement) === "auto") ||
         (textareaElement.getAttribute("cols") && dom.getStyle("width").from(textareaElement) === "auto")) {
       textareaElement.style.display = displayValueForCopying = originalDisplayValue;
     }
-    
+
     // --------- iframe styles (has to be set before editor styles, otherwise IE9 sets wrong fontFamily on blurStylesHost) ---------
     dom.copyStyles(BOX_FORMATTING).from(textareaElement).to(this.iframe).andTo(this.blurStylesHost);
-    
+
     // --------- editor styles ---------
     dom.copyStyles(TEXT_FORMATTING).from(textareaElement).to(this.element).andTo(this.blurStylesHost);
-    
+
     // --------- apply standard rules ---------
     dom.insertCSS(ADDITIONAL_CSS_RULES).into(this.element.ownerDocument);
-    
+
     // --------- :disabled styles ---------
     textareaElement.disabled = true;
     dom.copyStyles(BOX_FORMATTING).from(textareaElement).to(this.disabledStylesHost);
     dom.copyStyles(TEXT_FORMATTING).from(textareaElement).to(this.disabledStylesHost);
     textareaElement.disabled = originalDisabled;
-    
+
     // --------- :focus styles ---------
     textareaElement.style.display = originalDisplayValue;
     focusWithoutScrolling(textareaElement);
     textareaElement.style.display = displayValueForCopying;
-    
+
     dom.copyStyles(BOX_FORMATTING).from(textareaElement).to(this.focusStylesHost);
     dom.copyStyles(TEXT_FORMATTING).from(textareaElement).to(this.focusStylesHost);
-    
+
     // reset textarea
     textareaElement.style.display = originalDisplayValue;
-    
+
     dom.copyStyles(["display"]).from(textareaElement).to(this.iframe);
-    
+
     // Make sure that we don't change the display style of the iframe when copying styles oblur/onfocus
     // this is needed for when the change_view event is fired where the iframe is hidden and then
     // the blur event fires and re-displays it
     var boxFormattingStyles = wysihtml5.lang.array(BOX_FORMATTING).without(["display"]);
-    
+
     // --------- restore focus ---------
     if (originalActiveElement) {
       originalActiveElement.focus();
     } else {
       textareaElement.blur();
     }
-    
+
     // --------- restore placeholder ---------
     if (hasPlaceholder) {
       textareaElement.setAttribute("placeholder", originalPlaceholder);
     }
-    
+
     // --------- Sync focus/blur styles ---------
     this.parent.on("focus:composer", function() {
-      dom.copyStyles(boxFormattingStyles) .from(that.focusStylesHost).to(that.iframe);
-      dom.copyStyles(TEXT_FORMATTING)     .from(that.focusStylesHost).to(that.element);
+      //dom.copyStyles(boxFormattingStyles) .from(that.focusStylesHost).to(that.iframe);
+      //dom.copyStyles(TEXT_FORMATTING)     .from(that.focusStylesHost).to(that.element);
     });
-    
+
     this.parent.on("blur:composer", function() {
-      dom.copyStyles(boxFormattingStyles) .from(that.blurStylesHost).to(that.iframe);
-      dom.copyStyles(TEXT_FORMATTING)     .from(that.blurStylesHost).to(that.element);
+      //dom.copyStyles(boxFormattingStyles) .from(that.blurStylesHost).to(that.iframe);
+      //dom.copyStyles(TEXT_FORMATTING)     .from(that.blurStylesHost).to(that.element);
     });
-    
+
     this.parent.observe("disable:composer", function() {
-      dom.copyStyles(boxFormattingStyles) .from(that.disabledStylesHost).to(that.iframe);
-      dom.copyStyles(TEXT_FORMATTING)     .from(that.disabledStylesHost).to(that.element);
+      //dom.copyStyles(boxFormattingStyles) .from(that.disabledStylesHost).to(that.iframe);
+      //dom.copyStyles(TEXT_FORMATTING)     .from(that.disabledStylesHost).to(that.element);
     });
-    
+
     this.parent.observe("enable:composer", function() {
-      dom.copyStyles(boxFormattingStyles) .from(that.blurStylesHost).to(that.iframe);
-      dom.copyStyles(TEXT_FORMATTING)     .from(that.blurStylesHost).to(that.element);
+      //dom.copyStyles(boxFormattingStyles) .from(that.blurStylesHost).to(that.iframe);
+      //dom.copyStyles(TEXT_FORMATTING)     .from(that.blurStylesHost).to(that.element);
     });
-    
+
     return this;
   };
 })(wysihtml5);

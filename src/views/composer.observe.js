@@ -10,15 +10,12 @@
  */
 (function(wysihtml5) {
   var dom       = wysihtml5.dom,
-      browser   = wysihtml5.browser,
-      /**
-       * Map keyCodes to query commands
-       */
-      shortcuts = {
-        "66": "bold",     // B
-        "73": "italic",   // I
-        "85": "underline" // U
-      };
+      browser   = wysihtml5.browser;
+
+  /**
+   * Map keyCodes to query commands
+   */
+  var shortcuts = {};
 
   wysihtml5.views.Composer.prototype.observe = function() {
     var that                = this,
@@ -27,6 +24,13 @@
         element             = this.element,
         focusBlurElement    = browser.supportsEventsInIframeCorrectly() ? element : this.sandbox.getWindow(),
         pasteEvents         = ["drop", "paste"];
+
+    var confShortcuts = this.config.shortcuts;
+    shortcuts[confShortcuts.bold.charCodeAt(0)] = "bold";
+    shortcuts[confShortcuts.italic.charCodeAt(0)] = "italic";
+    shortcuts[confShortcuts.underline.charCodeAt(0)] = "underline";
+
+    this.minIframeHeight = parseInt(iframe.style.height.replace('px',''),10);
 
     //----------- Returns the current offset of the carret without counting the line breaks
     this._getCaretOffset = (function (el) {
@@ -119,6 +123,19 @@
           that._applyFixRules(that.config.parserRules.fix, str, String.fromCharCode(event.charCode), event);
       }
     });
+
+    if(that.config.autoResize){
+      dom.observe(element, ["keyup", "keydown", "paste", "change", "focus", "blur"], function(event){
+        var iframeCurrHeight = parseInt(iframe.style.height.replace("px",""),10);
+        var bodyHeight = Math.min(element.offsetHeight, element.scrollHeight, element.clientHeight) + 50;
+
+        if(bodyHeight >= iframeCurrHeight){
+          iframe.style.height = bodyHeight + "px";
+        } else if(bodyHeight > that.minIframeHeight){
+          iframe.style.height = (iframeCurrHeight - (iframeCurrHeight - bodyHeight)) + "px";
+        }
+      });
+    }
 
     // --------- destroy:composer event ---------
     dom.observe(iframe, "DOMNodeRemoved", function() {
