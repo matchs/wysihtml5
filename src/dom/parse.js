@@ -202,7 +202,7 @@ wysihtml5.dom.parse = (function() {
     
     newNode = oldNode.ownerDocument.createElement(rule.rename_tag || nodeName);
     _handleAttributes(oldNode, newNode, rule);
-    
+
     oldNode = null;
     return newNode;
   }
