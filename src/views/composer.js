@@ -388,11 +388,21 @@
             var nextSibling = currentNode.nextSibling || false,
               prevSibling = currentNode.previousSibling || false;
 
-            if (nextSibling.nodeName == "HR" || prevSibling.previousSibling && prevSibling.previousSibling.nodeName == "HR") { //If there's one hr already
+            if (nodeIsEmpty(currentNode) && (nextSibling && nextSibling.nodeName == "HR" || prevSibling && prevSibling.nodeName == "HR")) { //If there's one hr already
+              return false;
+            } else if(prevSibling && nodeIsEmpty(prevSibling)){
+              if(!prevSibling.previousSibling || prevSibling.previousSibling.nodeName !== "HR") {
+                return prevSibling;
+              } else {
+                return false;
+              }
+            } else if(nextSibling && nodeIsEmpty(nextSibling)) {
+              return nextSibling
+            } else if(!nodeIsEmpty(currentNode)){
               return false;
             }
 
-            return true;
+            return currentNode;
           }
         } else {
           return function(currentNode){
@@ -401,21 +411,34 @@
         }
       })();
 
+      var nodeIsEmpty = function(node){
+        //return dom.getTextContent(node).replace(/\s|\r|\n/g, '').length === 0 ? true : false;
+        var innerHTML = node.innerHTML;
+        return innerHTML.replace(/\s|\r|\n/g, '') === ""       ||
+          innerHTML === "<br>"        ||
+          innerHTML === "<p></p>"     ||
+          innerHTML === "<p><br></p>" ||
+          false;
+      }
+
       // Checks if it should open or not a new paragraph when key enter is hit
       var shouldOpenNewParagraph = (function(){
           var ENTER_KEY = wysihtml5.ENTER_KEY;
 
           return function (currentNode, keyCode){
-            var nextSibling = currentNode.nextSibling || false,
-              prevSibling = currentNode.previousSibling || false;
 
-            if (keyCode === ENTER_KEY
-              && (currentNode.nodeName === "P" && currentNode.innerText.replace(/\s|\r|\n/g, '').length === 0) //Checking for empty paragrapsh
-              && ((nextSibling && nextSibling.nodeName === "P" && nextSibling.innerText.replace(/\s|\r|\n/g, '').length === 0) //After current paragraph
-              || (prevSibling && prevSibling.nodeName === "P" && prevSibling.innerText.replace(/\s|\r|\n/g, '').length === 0))) {//Before current paragraph
+            if(keyCode !== ENTER_KEY)
+              return true;
 
+            var nextNode = currentNode.nextSibling,
+                prevNode = currentNode.previousSibling;
+
+            if ((currentNode.nodeName === "P" && nodeIsEmpty(currentNode))
+              || (nextNode && nodeIsEmpty(nextNode) && nextNode.nodeName == "P")
+              || (prevNode && nodeIsEmpty(prevNode) && prevNode.nodeName == "P")){
               return false;
             }
+            
             return true;
           }
       })();
@@ -463,18 +486,19 @@
           if(!shouldOpenNewParagraph(blockElement, keyCode)){
             event.preventDefault();
 
-            if(shouldPutHR(blockElement)){
+            var hrCandidate = shouldPutHR(blockElement);
+            if(hrCandidate){
               var hr = that.doc.createElement('hr');
-              var p = makeEmptyParagraph();
 
-              that.repositionCaretAt(replaceNodeWith(blockElement,[hr, p]));
+
+              var repl = replaceNodeWith(hrCandidate,[hr]);
+              if(repl && !repl.nextSibling){
+                repl = insertNodes(repl,[makeEmptyParagraph()]);
+              }
+
+              that.repositionCaretAt(repl);
               return;
             }
-          } else if ( keyCode == wysihtml5.ENTER_KEY && ((!that.config.shiftEnterEnabled && event.shiftKey) ||  blockElement.nodeName === "BLOCKQUOTE")) {
-            event.preventDefault();
-            var p = makeEmptyParagraph();
-
-            that.repositionCaretAt(insertNodes(blockElement,[p]));
           }
 
           setTimeout(function() {
@@ -513,17 +537,19 @@
         USE_NATIVE_LINE_BREAK_INSIDE_TAGS = ["LI", "P", "H1", "H2", "H3", "H4", "H5", "H6"];
 
       dom.observe(this.element, "keydown", function (event) {
+        return;
         var blockElement = dom.getParentElement(that.selection.getSelectedNode(), { nodeName: USE_NATIVE_LINE_BREAK_INSIDE_TAGS }, 4);
 
         if(event.keyCode == wysihtml5.ENTER_KEY && blockElement && blockElement.nodeName === "P"){
           setTimeout(function(){
-            blockElement.innerText = blockElement.innerText.replace(/^\s*[a-zçáàéèíìóòúùñãõüïâêîôû]/, function(match){
+            var newText = dom.getTextContent(blockElement).replace(/^\s*[a-zçáàéèíìóòúùñãõüïâêîôû]/, function(match){
               return match.toUpperCase();
             }).replace(/[ ]+$/,'')
               .replace(/[^!?.:;\s]$/g,"$&.");
 
-            that.repositionCaretAt(that.selection.getSelectedNode());
-          }, 0);
+            dom.setTextContent(blockElement, newText);
+            //that.repositionCaretAt(that.selection.getSelectedNode());
+          }, 10);
         }
       });
     },
@@ -533,12 +559,12 @@
       dom.observe(this.element, ["keydown", "blur"], function (event) {
 
         if (event.type == 'blur' || event.keyCode == wysihtml5.ENTER_KEY) {
-          var innerText = that.element.innerText;
+          var text = dom.getTextContent(that.element);
 
-          var match = innerText.match(/[A-ZÇÁÀÉÈÍÌÓÒÚÙÑÃÕÜÏÂÊÎÔÛ]/g);
+          var match = text.match(/[A-ZÇÁÀÉÈÍÌÓÒÚÙÑÃÕÜÏÂÊÎÔÛ]/g);
           var nUpper = match ? match.length : 0;
 
-          var upperRatio = nUpper / innerText.length;
+          var upperRatio = nUpper / text.length;
           var ratios = that.config.alertUpperRatio;
 
           for(var i =0; i < ratios.length; i++){

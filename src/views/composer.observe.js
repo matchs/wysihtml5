@@ -69,7 +69,7 @@
 
     // --------- Returns the text around the caret from lookback to lookahead
     this._getTextAroundCaret = function (charCode, lookback, lookahead) {
-      var itxt = that.element.innerText.replace(/\n|^\b/g, '');
+      var itxt = dom.getTextContent(that.element).replace(/\n|^\b/g, '');
       var char = String.fromCharCode(charCode);
 
       var caretPos = that._getCaretOffset();
@@ -114,13 +114,16 @@
 
     // --------- Error prevention and auto-correct logic ---------
     dom.observe(element, "keypress", function (event) {
-
       var str = that._getTextAroundCaret(event.charCode, 3, 3);
-
-
 
       if (that._applyDenyRules(that.config.parserRules.deny, str, event) !== true) {
           that._applyFixRules(that.config.parserRules.fix, str, String.fromCharCode(event.charCode), event);
+      }
+    });
+
+    dom.observe(element, "keypress", function(event){
+      if(that.selection.getSelectedNode(true).nodeName === "BODY"){
+        event.preventDefault();
       }
     });
 

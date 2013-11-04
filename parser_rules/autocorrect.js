@@ -121,9 +121,7 @@ var wysihtml5ParserRules = {
       "rename_tag": "span"
     },
     "br": {
-      "add_class": {
-        "clear": "clear_br"
-      }
+      "remove": 1
     },
     "details": {
       "rename_tag": "div"
@@ -628,7 +626,7 @@ var wysihtml5ParserRules = {
       "msg": "Commas must come right after the previous word"
     },
     {
-      "rule": /\s{2,}/g,
+      "rule": /[ ]{2,}/g,
       "msg": "Avoid using extra spaces"
     },
     {
