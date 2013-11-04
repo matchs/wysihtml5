@@ -39,10 +39,8 @@
         "width", "height"
       ],
       ADDITIONAL_CSS_RULES = [
-        //"html                 { height: 100%; }",
-        "html                 { height: 100%; clear:both; overflow:hidden; }",
-        //"body                 { height: 100%; padding: 1px 0 0 0; margin: -1px 0 0 0; }",
-        "body                 { overflow:auto; clear: both; padding: 1px 0 0 0; margin: -1px 0 0 0; }",
+        "html                 { height: 100%; }",
+        "body                 { height: 100%; padding: 1px 0 0 0; margin: -1px 0 0 0; }",
         "body > p:first-child { margin-top: 0; }",
         "._wysihtml5-temp     { display: none; }",
         wysihtml5.browser.isGecko ?
@@ -107,6 +105,11 @@
         originalDisplayValue  = textareaElement.style.display,
         originalDisabled      = textareaElement.disabled,
         displayValueForCopying;
+
+    if(this.parent.config.autoResize) {
+      ADDITIONAL_CSS_RULES[0] = "html                 { height: 100%; clear:both; overflow:hidden; }";
+      ADDITIONAL_CSS_RULES[1] = "body                 { overflow:auto; clear: both; padding: 1px 0 0 0; margin: -1px 0 0 0; }";
+    }
 
     this.focusStylesHost      = HOST_TEMPLATE.cloneNode(false);
     this.blurStylesHost       = HOST_TEMPLATE.cloneNode(false);
@@ -177,27 +180,28 @@
       textareaElement.setAttribute("placeholder", originalPlaceholder);
     }
 
+    if(!this.parent.config.autoResize) {
     // --------- Sync focus/blur styles ---------
-    this.parent.on("focus:composer", function() {
-      //dom.copyStyles(boxFormattingStyles) .from(that.focusStylesHost).to(that.iframe);
-      //dom.copyStyles(TEXT_FORMATTING)     .from(that.focusStylesHost).to(that.element);
-    });
+      this.parent.on("focus:composer", function() {
+        dom.copyStyles(boxFormattingStyles) .from(that.focusStylesHost).to(that.iframe);
+        dom.copyStyles(TEXT_FORMATTING)     .from(that.focusStylesHost).to(that.element);
+      });
 
-    this.parent.on("blur:composer", function() {
-      //dom.copyStyles(boxFormattingStyles) .from(that.blurStylesHost).to(that.iframe);
-      //dom.copyStyles(TEXT_FORMATTING)     .from(that.blurStylesHost).to(that.element);
-    });
+      this.parent.on("blur:composer", function() {
+        dom.copyStyles(boxFormattingStyles) .from(that.blurStylesHost).to(that.iframe);
+        dom.copyStyles(TEXT_FORMATTING)     .from(that.blurStylesHost).to(that.element);
+      });
 
-    this.parent.observe("disable:composer", function() {
-      //dom.copyStyles(boxFormattingStyles) .from(that.disabledStylesHost).to(that.iframe);
-      //dom.copyStyles(TEXT_FORMATTING)     .from(that.disabledStylesHost).to(that.element);
-    });
+      this.parent.observe("disable:composer", function() {
+        dom.copyStyles(boxFormattingStyles) .from(that.disabledStylesHost).to(that.iframe);
+        dom.copyStyles(TEXT_FORMATTING)     .from(that.disabledStylesHost).to(that.element);
+      });
 
-    this.parent.observe("enable:composer", function() {
-      //dom.copyStyles(boxFormattingStyles) .from(that.blurStylesHost).to(that.iframe);
-      //dom.copyStyles(TEXT_FORMATTING)     .from(that.blurStylesHost).to(that.element);
-    });
-
+      this.parent.observe("enable:composer", function() {
+        dom.copyStyles(boxFormattingStyles) .from(that.blurStylesHost).to(that.iframe);
+        dom.copyStyles(TEXT_FORMATTING)     .from(that.blurStylesHost).to(that.element);
+      });
+    }
     return this;
   };
 })(wysihtml5);
