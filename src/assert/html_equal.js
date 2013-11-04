@@ -95,7 +95,7 @@ wysihtml5.assert.htmlEqual = (function() {
       actual = removeWhiteSpace(actual);
       expected = removeWhiteSpace(expected);
     }
-    
+
     actual = tokenizeHTML(actual);
     expected = tokenizeHTML(expected);
     ok(actual == expected, message);
