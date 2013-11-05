@@ -50,6 +50,16 @@
  *    // => '<p class="red">foo</p><p>bar</p>'
  */
 wysihtml5.dom.parse = (function() {
+
+  var _nodeIsEmpty = function(node){
+    //return dom.getTextContent(node).replace(/\s|\r|\n/g, '').length === 0 ? true : false;
+    var innerHTML = node.innerHTML;
+    return innerHTML.replace(/\s|\r|\n/g, '') === ""       ||
+      innerHTML === "<br>"        ||
+      innerHTML === "<p></p>"     ||
+      innerHTML === "<p><br></p>" ||
+      false;
+  }
   
   /**
    * It's not possible to use a XMLParser/DOMParser as HTML5 is not always well-formed XML
@@ -162,7 +172,7 @@ wysihtml5.dom.parse = (function() {
     if (oldNode.className === "wysihtml5-temp") {
       return null;
     }
-    
+
     /**
      * IE is the only browser who doesn't include the namespace in the
      * nodeName, that's why we have to prepend it by ourselves
@@ -201,6 +211,10 @@ wysihtml5.dom.parse = (function() {
     }
     
     newNode = oldNode.ownerDocument.createElement(rule.rename_tag || nodeName);
+    /*if(newNode.nodeName === 'P' && _nodeIsEmpty(newNode)){
+      return null;
+    }*/
+
     _handleAttributes(oldNode, newNode, rule);
 
     oldNode = null;

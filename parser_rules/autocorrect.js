@@ -626,7 +626,7 @@ var wysihtml5ParserRules = {
       "msg": "Commas must come right after the previous word"
     },
     {
-      "rule": /\s{2,}/g,
+      "rule": /( ){2,}/g,
       "msg": "Avoid using extra spaces"
     },
     {
@@ -660,7 +660,7 @@ var wysihtml5ParserRules = {
       }
     },
     {
-      "rule": /[^.]\.\s\S/i,//Period followed by any non-whitespace character
+      "rule": /[^.]\.\s[a-zçáàéèíìóòúùñãõüïâêîôû]/,//Period followed by any non-whitespace character
       "fix": function (char) {
         return char.toUpperCase();
       }
