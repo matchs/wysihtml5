@@ -62,9 +62,7 @@
     cleanUp:              true,
     // Auto inserts <hr> elements after two consecutive line breaks
     autoInsertHR:         true,
-    // Auto formats capitalization and punctuation
-    autoFormat:           true,
-    // Enables or disables new line when shift+enter keys are pressed
+    // Enables or disables new line when shift+enter keys are pressed*/
     shiftEnterEnabled:    true,
     // Emit an event if text has too much upper case words
     autoCheckCase:        false,
@@ -79,7 +77,9 @@
       bold: 'b',
       italic: 'i',
       underline: 'u'
-    }
+    },
+    // Disable line breaking
+    titleMode:   false
   };
   
   wysihtml5.Editor = wysihtml5.lang.Dispatcher.extend(

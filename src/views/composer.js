@@ -184,7 +184,7 @@
       this._initUndoManager();
       this._initLineBreaking();
 
-      if(that.config.autoFormat){
+      if(that.config.titleMode){
         this._initAutoFormatting();
       }
 
@@ -480,6 +480,11 @@
       dom.observe(this.doc, "keydown", function(event) {
         var keyCode = event.keyCode;
 
+        if(that.config.titleMode && keyCode === wysihtml5.ENTER_KEY){
+          event.preventDefault();
+          return;
+        }
+
         if (event.shiftKey && keyCode !== wysihtml5.ENTER_KEY) {
           return;
         }
@@ -548,20 +553,12 @@
       var that                              = this,
         USE_NATIVE_LINE_BREAK_INSIDE_TAGS = ["LI", "P", "H1", "H2", "H3", "H4", "H5", "H6"];
 
-      dom.observe(this.element, "keydown", function (event) {
-        return;
-        var blockElement = dom.getParentElement(that.selection.getSelectedNode(), { nodeName: USE_NATIVE_LINE_BREAK_INSIDE_TAGS }, 4);
-
-        if(event.keyCode == wysihtml5.ENTER_KEY && blockElement && blockElement.nodeName === "P"){
-          setTimeout(function(){
-            var newText = dom.getTextContent(blockElement).replace(/^\s*[a-zçáàéèíìóòúùñãõüïâêîôû]/, function(match){
+      dom.observe(this.element, ["blur"],function(){
+        var node = dom.getParentElement(that.selection.getSelectedNode(), { nodeName: USE_NATIVE_LINE_BREAK_INSIDE_TAGS }, 4);
+        if(node){
+          node.innerHTML = node.innerHTML.replace(/^(&nbsp;)+|(&nbsp;)+$/g,'').replace(/^\s*[a-zçáàéèíìóòúùñãõüïâêîôû]/,function(match){
               return match.toUpperCase();
-            }).replace(/[ ]+$/,'')
-              .replace(/[^!?.:;\s]$/g,"$&.");
-
-            dom.setTextContent(blockElement, newText);
-            //that.repositionCaretAt(that.selection.getSelectedNode());
-          }, 10);
+          });
         }
       });
     },

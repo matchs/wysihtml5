@@ -626,7 +626,7 @@ var wysihtml5ParserRules = {
       "msg": "Commas must come right after the previous word"
     },
     {
-      "rule": /[ ]{2,}/g,
+      "rule": /\s{2,}/g,
       "msg": "Avoid using extra spaces"
     },
     {
