@@ -146,7 +146,15 @@
   function _hasClasses(element) {
     return !!wysihtml5.lang.string(element.className).trim();
   }
-  
+
+  //@fixme Refactor to use document fragments for performance improvement
+  function _makeEmptyParagraph(doc){
+    var p = doc.createElement('p');
+    p.appendChild(doc.createElement('br'));
+
+    return p;
+  }
+
   wysihtml5.commands.formatBlock = {
     exec: function(composer, command, nodeName, className, classRegExp) {
       var doc             = composer.doc,
@@ -187,7 +195,13 @@
           composer.selection.executeAndRestore(function() {
             // Rename current block element to new block element and add class
             if (nodeName) {
-              blockElement = dom.renameElement(blockElement, nodeName);
+
+              if(nodeName == "BLOCKQUOTE"){
+                var blockquote = doc.createElement("blockquote");
+                blockElement = dom.replaceAndBecomeChild(blockElement, blockquote);
+              } else {
+                blockElement = dom.renameElement(blockElement, nodeName);
+              }
             }
             if (className) {
               _addClass(blockElement, className, classRegExp);

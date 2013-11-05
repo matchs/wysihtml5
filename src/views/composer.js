@@ -357,6 +357,7 @@
         }
       }
 
+      //@fixme Refactor to use document fragments for performance improvement
       // Inserts a set of nodes sequentially after currentNode
       function insertNodes(currentNode, nodes){
         if(nodes.length <= 0) {
@@ -366,6 +367,7 @@
         return insertNodes(nodes[0], nodes.slice(1, nodes.length));
       }
 
+      //@fixme Refactor to use document fragments for performance improvement
       // Creates a new empty <p> element
       function makeEmptyParagraph(){
         var p = that.doc.createElement('p');
@@ -374,6 +376,7 @@
         return p;
       }
 
+      //@fixme Refactor to use document fragments for performance improvement
       // Replaces a given node with a set of given nodes
       function replaceNodeWith(currentNode, nodes) {
         var node = insertNodes(currentNode, nodes);
@@ -382,11 +385,16 @@
         return node;
       }
 
+      //Checks if should put an <hr> and returns in wich element or false
       var shouldPutHR = (function(){
         if(that.config.autoInsertHR){
           return function (currentNode){
             var nextSibling = currentNode.nextSibling || false,
               prevSibling = currentNode.previousSibling || false;
+
+            if(currentNode.parentNode && currentNode.parentNode.nodeName == "BLOCKQUOTE"){
+              return false;
+            }
 
             if (nodeIsEmpty(currentNode) && (nextSibling && nextSibling.nodeName == "HR" || prevSibling && prevSibling.nodeName == "HR")) { //If there's one hr already
               return false;
@@ -490,13 +498,17 @@
             if(hrCandidate){
               var hr = that.doc.createElement('hr');
 
-
               var repl = replaceNodeWith(hrCandidate,[hr]);
               if(repl && !repl.nextSibling){
                 repl = insertNodes(repl,[makeEmptyParagraph()]);
               }
 
               that.repositionCaretAt(repl);
+              return;
+            } else if(blockElement.parentNode && blockElement.parentNode.nodeName == "BLOCKQUOTE") {
+              var blockquote = blockElement.parentNode;
+              blockquote.parentNode.insertBefore(blockElement, blockquote.nextSibling);
+              that.repositionCaretAt(blockElement);
               return;
             }
           }
