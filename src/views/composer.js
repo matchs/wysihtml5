@@ -584,6 +584,8 @@
               return;
             }
           }
+
+          that.parent.fire('alertUpperSafe:composer');
         }
       });
     }
