@@ -90,6 +90,10 @@
       } else {
         // Create links
         value = typeof(value) === "object" ? value : { href: value };
+
+        var href = value.href;
+        value.href = /http[s]?:\/\//.test(href) ? href : 'http://'+href;
+
         _format(composer, value);
       }
     },
