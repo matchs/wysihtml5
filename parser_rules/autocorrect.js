@@ -621,13 +621,17 @@ var wysihtml5ParserRules = {
    *  - message: A message to be sent through an event. Can be used to warn the user about mistypes etc.
    */
   "deny": [
-    {
+    /*{
       "rule": /(\s\,)/,
       "msg": "Commas must come right after the previous word"
+    },*/
+    {
+      "rule": /[\u00a0\t\ ]{2,}/ig,
+      "msg": "Avoid using extra spaces"
     },
     {
-      "rule": /( ){2,}/g,
-      "msg": "Avoid using extra spaces"
+      "rule": /[\u00a0\t]+\n/img,
+      "msg": "Avoid empty spaces in the end of line"
     },
     {
       "rule": /(\?{2,}|!{2,}|!\?[!?]+|\?![!?]+)|([!?](\s+[!?.,:;])+)/g,
@@ -651,6 +655,16 @@ var wysihtml5ParserRules = {
   "fix": [
     {
       "rule": /\,\S/i,//Comma followed by any non-whitespace character
+      "fix": function (char) {
+        if (char == ',') {
+          return char + ' '
+        } else {
+          return ' ' + char;
+        }
+      }
+    },
+    {
+      "rule": /\s\./i,//Comma followed by any non-whitespace character
       "fix": function (char) {
         if (char == ',') {
           return char + ' '

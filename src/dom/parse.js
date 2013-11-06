@@ -51,14 +51,13 @@
  */
 wysihtml5.dom.parse = (function() {
 
-  var _nodeIsEmpty = function(node){
-    //return dom.getTextContent(node).replace(/\s|\r|\n/g, '').length === 0 ? true : false;
+  var ALLOWED_EMPTY_NODES_REGEX = new RegExp("\<img|\<iframe|\<video|\<hr|\<canvas",'i');
+
+  function _nodeIsEmpty(node){
     var innerHTML = node.innerHTML;
-    return innerHTML.replace(/\s|\r|\n/g, '') === ""       ||
-      innerHTML === "<br>"        ||
-      innerHTML === "<p></p>"     ||
-      innerHTML === "<p><br></p>" ||
-      false;
+    var innerText = wysihtml5.dom.getTextContent(node);
+
+    return (innerText.replace(/\s/,'').length == 0) && (innerHTML && !ALLOWED_EMPTY_NODES_REGEX.test(innerHTML));
   }
   
   /**
@@ -102,7 +101,7 @@ wysihtml5.dom.parse = (function() {
       firstChild = element.firstChild;
       newNode = _convert(firstChild, cleanUp);
       element.removeChild(firstChild);
-      if (newNode) {
+      if (newNode && !_nodeIsEmpty(newNode)) {
           fragment.appendChild(newNode);
       }
     }
@@ -211,9 +210,6 @@ wysihtml5.dom.parse = (function() {
     }
     
     newNode = oldNode.ownerDocument.createElement(rule.rename_tag || nodeName);
-    /*if(newNode.nodeName === 'P' && _nodeIsEmpty(newNode)){
-      return null;
-    }*/
 
     _handleAttributes(oldNode, newNode, rule);
 

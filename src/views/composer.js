@@ -2,6 +2,8 @@
   var dom       = wysihtml5.dom,
       browser   = wysihtml5.browser;
 
+  var ALLOWED_EMPTY_NODES_REGEX = new RegExp("\<img|\<iframe|\<video|\<hr|\<canvas",'i');
+
   wysihtml5.views.Composer = wysihtml5.views.View.extend(
     /** @scope wysihtml5.views.Composer.prototype */ {
     name: "composer",
@@ -389,23 +391,34 @@
       var shouldPutHR = (function(){
         if(that.config.autoInsertHR){
           return function (currentNode){
-            var nextSibling = currentNode.nextSibling || false,
-              prevSibling = currentNode.previousSibling || false;
+            var nextSibling = currentNode.nextElementSibling || false,
+              prevSibling = currentNode.previousElementSibling || false,
+              parentNode = currentNode.parentNode || false;
 
-            if(currentNode.parentNode && currentNode.parentNode.nodeName == "BLOCKQUOTE"){
-              return false;
+            if(parentNode){
+              switch (parentNode.nodeName){
+                case "BLOCKQUOTE":
+                  return false;
+                case "DIV":
+                  dom.replaceWithChildNodes(parentNode);
+                  break;
+              }
             }
 
             if (nodeIsEmpty(currentNode) && (nextSibling && nextSibling.nodeName == "HR" || prevSibling && prevSibling.nodeName == "HR")) { //If there's one hr already
               return false;
-            } else if(prevSibling && nodeIsEmpty(prevSibling)){
-              if(!prevSibling.previousSibling || prevSibling.previousSibling.nodeName !== "HR") {
+            } else if(prevSibling && nodeIsEmpty(prevSibling) && prevSibling.nodeName !== "HR"){
+              if(!prevSibling.previousElementSibling || prevSibling.previousElementSibling.nodeName !== "HR") {
                 return prevSibling;
               } else {
                 return false;
               }
-            } else if(nextSibling && nodeIsEmpty(nextSibling)) {
-              return nextSibling
+            } else if(nextSibling && nodeIsEmpty(nextSibling) && nextSibling.nodeName !== "HR") {
+              if(!nextSibling.nextElementSibling || nextSibling.nextElementSibling.nodeName !== "HR") {
+                return nextSibling;
+              } else {
+                return false;
+              }
             } else if(!nodeIsEmpty(currentNode)){
               return false;
             }
@@ -419,14 +432,11 @@
         }
       })();
 
-      var nodeIsEmpty = function(node){
-        //return dom.getTextContent(node).replace(/\s|\r|\n/g, '').length === 0 ? true : false;
+      function nodeIsEmpty(node){
         var innerHTML = node.innerHTML;
-        return innerHTML.replace(/\s|\r|\n/g, '') === ""       ||
-          innerHTML === "<br>"        ||
-          innerHTML === "<p></p>"     ||
-          innerHTML === "<p><br></p>" ||
-          false;
+        var innerText = wysihtml5.dom.getTextContent(node);
+
+        return (innerText.replace(/\s/,'').length == 0) && (innerHTML && !ALLOWED_EMPTY_NODES_REGEX.test(innerHTML));
       }
 
       // Checks if it should open or not a new paragraph when key enter is hit
@@ -501,6 +511,11 @@
 
             var hrCandidate = shouldPutHR(blockElement);
             if(hrCandidate){
+
+              blockElement.innerHTML = dom.parse(blockElement, {
+                parser : that.config.parserRules.parser
+              }).innerHTML;
+
               var hr = that.doc.createElement('hr');
 
               var repl = replaceNodeWith(hrCandidate,[hr]);
@@ -532,6 +547,16 @@
 
               if (!list) {
                 adjust(selectedNode);
+              }
+            }
+
+            if(!nodeIsEmpty(blockElement) && keyCode === wysihtml5.ENTER_KEY){
+              blockElement.innerHTML = dom.parse(blockElement, {
+                parser : that.config.parserRules.parser
+              }).innerHTML;
+
+              if(blockElement.nextElementSibling){
+                that.repositionCaretAt(blockElement.nextElementSibling);
               }
             }
 
