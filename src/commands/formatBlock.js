@@ -196,7 +196,7 @@
             // Rename current block element to new block element and add class
             if (nodeName) {
 
-              if(nodeName == "BLOCKQUOTE"){
+              if(nodeName == "BLOCKQUOTE") {
                 var blockquote = doc.createElement("blockquote");
                 blockElement = dom.replaceAndBecomeChild(blockElement, blockquote);
               } else {
@@ -208,11 +208,26 @@
             }
           });
           return;
+        } else if(nodeName == "BLOCKQUOTE") {
+          var selection = composer.selection.getSelection();
+          var selectionHtml = selection.toHtml();
+          var selectionDom = dom.getAsDom(selectionHtml)
+          doc.body.appendChild(selectionDom);
+          dom.renameElement(selectionDom, nodeName);
+          var range = selection.getRangeAt(0);
+          range.deleteContents();
+
+          return;
         }
       }
 
       if (composer.commands.support(command)) {
         _execCommand(doc, command, nodeName || defaultNodeName, className);
+
+        composer.parent.fire('formatBlock:command', {
+          command:command,
+          nodeName:nodeName
+        });
         return;
       }
 
