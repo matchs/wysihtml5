@@ -223,11 +223,6 @@
 
       if (composer.commands.support(command)) {
         _execCommand(doc, command, nodeName || defaultNodeName, className);
-
-        composer.parent.fire('formatBlock:command', {
-          command:command,
-          nodeName:nodeName
-        });
         return;
       }
 
