@@ -519,11 +519,11 @@
               var hr = that.doc.createElement('hr');
 
               var repl = replaceNodeWith(hrCandidate,[hr]);
-              if(repl && !repl.nextSibling){
+              if(repl && !repl.nextElementSibling){
                 repl = insertNodes(repl,[makeEmptyParagraph()]);
+                that.repositionCaretAt(repl);
               }
 
-              that.repositionCaretAt(repl);
               return;
             } else if(blockElement.parentNode && blockElement.parentNode.nodeName == "BLOCKQUOTE") {
               var blockquote = blockElement.parentNode;
@@ -551,13 +551,7 @@
             }
 
             if(!nodeIsEmpty(blockElement) && keyCode === wysihtml5.ENTER_KEY){
-              blockElement.innerHTML = dom.parse(blockElement, {
-                parser : that.config.parserRules.parser
-              }).innerHTML;
-
-              if(blockElement.nextElementSibling){
-                that.repositionCaretAt(blockElement.nextElementSibling);
-              }
+              blockElement.innerHTML = dom.parse(blockElement, that.config.parserRules).innerHTML;
             }
 
             if (keyCode === wysihtml5.ENTER_KEY && blockElement.nodeName.match(/^H[1-6]$/)) {
