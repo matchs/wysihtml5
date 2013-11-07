@@ -123,19 +123,23 @@
 
     dom.observe(element, "keypress", function(event){
       if(that.selection.getSelectedNode(true).nodeName === "BODY"){
-        event.preventDefault();
+        if(that.selection.getText() === ""){
+          event.preventDefault();
+        }
       }
     });
 
     if(that.config.autoResize){
       dom.observe(element, ["keyup", "keydown", "paste", "change", "focus", "blur"], function(event){
         var iframeCurrHeight = parseInt(iframe.style.height.replace("px",""),10);
-        var bodyHeight = Math.min(element.offsetHeight, element.scrollHeight, element.clientHeight) + 50;
+        var bodyHeight = Math.min(element.offsetHeight, element.scrollHeight, element.clientHeight) + 20;
 
         if(bodyHeight >= iframeCurrHeight){
           iframe.style.height = bodyHeight + "px";
         } else if(bodyHeight > that.minIframeHeight){
           iframe.style.height = (iframeCurrHeight - (iframeCurrHeight - bodyHeight)) + "px";
+        } else if (iframeCurrHeight > that.minIframeHeight && bodyHeight < that.minIframeHeight){
+          iframe.style.height = that.minIframeHeight + "px";
         }
       });
     }
