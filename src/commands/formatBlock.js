@@ -212,11 +212,11 @@
           var selection = composer.selection.getSelection();
           var selectionHtml = selection.toHtml();
           var selectionDom = dom.getAsDom(selectionHtml)
-          doc.body.appendChild(selectionDom);
-          dom.renameElement(selectionDom, nodeName);
+
           var range = selection.getRangeAt(0);
           range.deleteContents();
-
+          range.insertNode(selectionDom);
+          dom.renameElement(selectionDom, nodeName);
           return;
         }
       }
