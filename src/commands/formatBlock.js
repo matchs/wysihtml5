@@ -217,6 +217,7 @@
           range.deleteContents();
           range.insertNode(selectionDom);
           dom.renameElement(selectionDom, nodeName);
+          selection.removeAllRanges();
           return;
         }
       }
