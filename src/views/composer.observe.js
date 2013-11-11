@@ -30,9 +30,9 @@
     shortcuts[confShortcuts.italic.charCodeAt(0)] = "italic";
     shortcuts[confShortcuts.underline.charCodeAt(0)] = "underline";
 
-    this.minIframeHeight = parseInt(iframe.style.height.replace('px',''),10);
+    this.minIframeHeight = parseInt(iframe.style.height.replace('px',''), 10);
 
-    //----------- Returns the current offset of the carret without counting the line breaks
+    //----------- Returns the current offset of the caret without counting the line breaks
     this._getCaretOffset = (function (el) {
       var doc = el.ownerDocument || el.document;
       var win = doc.defaultView || doc.parentWindow;

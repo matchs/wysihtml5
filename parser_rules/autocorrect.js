@@ -171,7 +171,9 @@ var wysihtml5ParserRules = {
       "rename_tag": "span"
     },
     "iframe": {
-      "remove": 1
+      "check_attributes":{
+        "src":"url"
+      }
     },
     "figcaption": {
       "rename_tag": "div"
@@ -564,12 +566,12 @@ var wysihtml5ParserRules = {
     },
     {
       "rule": /\s{2,}/g,
-      "replace": "$1"
+      "replace": " "
     },
     {
-      "rule": /\,\S/g,
+      "rule": /[,:;!?]\S/g,
       "replace": function (txt) {
-        return txt.replace(',', ', ');
+        return txt.replace(txt[0], txt[0]+' ');
       }
     },
     {
@@ -609,6 +611,22 @@ var wysihtml5ParserRules = {
       "replace": function (txt) {
         return txt.toUpperCase()
       }
+    },
+    {
+      "rule": /[@&*%&#+-]{2,}/g,
+      "replace": ""
+    },
+    {
+      "rule": /[,:;][a-zçáàéèíìóòúùñãõüïâêîôû]/g,
+      "replace": function(txt){
+        return txt[0] + ' ' + txt[1];
+      }
+    },
+    {
+      "rule": /\s+[.,;:!?]$/g,
+      "replace": function(txt){
+        return txt[txt.length - 1];
+      }
     }
   ],
 
@@ -622,16 +640,16 @@ var wysihtml5ParserRules = {
    */
   "deny": [
     /*{
-      "rule": /(\s\,)/,
-      "msg": "Commas must come right after the previous word"
-    },*/
+     "rule": /(\s\,)/,
+     "msg": "Commas must come right after the previous word"
+     },*/
     {
       "rule": /[\u00a0\t\ ]{2,}/ig,
       "msg": "Avoid using extra spaces"
     },
     {
       "rule": /[\u00a0\t]+\n/img,
-      "msg": "Avoid empty spaces in the end of line"
+      "msg": "Avoid empty spaces at the end of line"
     },
     {
       "rule": /(\?{2,}|!{2,}|!\?[!?]+|\?![!?]+)|([!?](\s+[!?.,:;])+)/g,
@@ -640,6 +658,10 @@ var wysihtml5ParserRules = {
     {
       "rule": /(\.([,:;!?]+|\.{3,}))|([,:;][.,:;!?]+)|([.,:;](\s+[.,:;!?])+)|([!?]\s*[.,:;])/g,
       "msg": "Avoid excessive punctuation"
+    },
+    {
+      "rule": /[@&*%&#+-]{2,}/g,
+      "msg": "Avoid excessive usage of symbols"
     }
   ],
 
@@ -654,19 +676,9 @@ var wysihtml5ParserRules = {
    */
   "fix": [
     {
-      "rule": /\,\S/i,//Comma followed by any non-whitespace character
+      "rule": /[,:;]\S/i,//Punctuation followed by any non-whitespace character
       "fix": function (char) {
-        if (char == ',') {
-          return char + ' '
-        } else {
-          return ' ' + char;
-        }
-      }
-    },
-    {
-      "rule": /\s\./i,//Comma followed by any non-whitespace character
-      "fix": function (char) {
-        if (char == ',') {
+        if (char in [',',';',':']) {
           return char + ' '
         } else {
           return ' ' + char;

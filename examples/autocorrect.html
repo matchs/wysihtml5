@@ -88,6 +88,7 @@
         <a data-wysihtml5-command="italic" title="CTRL+I">italic</a> |
         <a data-wysihtml5-command="createLink">insert link</a> |
         <a data-wysihtml5-command="insertImage">insert image</a> |
+        <a data-wysihtml5-command="insertVideo">insert video</a> |
         <a data-wysihtml5-command="formatBlock" data-wysihtml5-command-value="h3">h</a> |
         <a data-wysihtml5-command="formatBlock" data-wysihtml5-command-value="h2">h2</a> |
         <a data-wysihtml5-command="insertHtml" data-wysihtml5-command-value="<hr/>">hr</a> |
@@ -126,6 +127,14 @@
             <a data-wysihtml5-dialog-action="save">OK</a>&nbsp;<a data-wysihtml5-dialog-action="cancel">Cancel</a>
         </div>
 
+        <div data-wysihtml5-dialog="insertVideo" style="display: none;">
+            <label>
+                Video:
+                <input data-wysihtml5-dialog-field="src">
+            </label>
+            <a data-wysihtml5-dialog-action="save">OK</a>&nbsp;<a data-wysihtml5-dialog-action="cancel">Cancel</a>
+        </div>
+
     </div>
     <textarea id="textarea" placeholder="Enter text ..."></textarea>
     <br><input type="reset" value="Reset form!">
@@ -136,7 +145,7 @@
 
 <small>powered by <a href="https://github.com/xing/wysihtml5" target="_blank">wysihtml5</a>.</small>
 
-<script src="../../juseditor/js/parser_rules/autocorrect.js"></script>
+<script src="../parser_rules/autocorrect.js"></script>
 <script src="../dist/wysihtml5-0.5.0pre.js"></script>
 <script>
     var editor = new wysihtml5.Editor("textarea", {

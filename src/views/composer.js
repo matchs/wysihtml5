@@ -495,7 +495,7 @@
           return;
         }
 
-        if (event.shiftKey && keyCode !== wysihtml5.ENTER_KEY) {
+        if (keyCode !== wysihtml5.ENTER_KEY && event.shiftKey) {
           return;
         }
 
@@ -530,7 +530,11 @@
               blockquote.parentNode.insertBefore(blockElement, blockquote.nextSibling);
               that.repositionCaretAt(blockElement);
               return;
+
             }
+          } else  if(event.shiftKey && event.keyCode == wysihtml5.ENTER_KEY) {
+            event.preventDefault();
+            that.repositionCaretAt(insertNodes(blockElement, [makeEmptyParagraph()]));
           }
 
           setTimeout(function() {
