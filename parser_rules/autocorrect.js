@@ -639,10 +639,6 @@ var wysihtml5ParserRules = {
    *  - message: A message to be sent through an event. Can be used to warn the user about mistypes etc.
    */
   "deny": [
-    /*{
-     "rule": /(\s\,)/,
-     "msg": "Commas must come right after the previous word"
-     },*/
     {
       "rule": /[\u00a0\t\ ]{2,}/ig,
       "msg": "Avoid using extra spaces"
@@ -671,7 +667,7 @@ var wysihtml5ParserRules = {
    * Used to provide patterns in order to automatically correct them while the text is typed bu the user
    *
    *  - rule: A regular expression that matches text around the caret
-   *  - fix:  A function that receives char that's being inputed and returns a transformation over it
+   *  - fix:  A function that receives char that's being inputted and returns a transformation over it
    *
    */
   "fix": [

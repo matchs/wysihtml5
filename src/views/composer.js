@@ -197,7 +197,11 @@
       // Puts the caret immediately after the given node
       this.repositionCaretAt = function(element){
         if (!browser.displaysCaretInEmptyContentEditableCorrectly()) {
-          that.selection.setAfter(element);
+          if(element.innerHTML == ""){
+            element.innerHTML == "<br>";
+          }
+
+          that.selection.setBefore(element.firstChild);
         } else {
           that.selection.selectNode(element, true);
         }
@@ -382,7 +386,8 @@
       // Replaces a given node with a set of given nodes
       function replaceNodeWith(currentNode, nodes) {
         var node = insertNodes(currentNode, nodes);
-        currentNode.remove();
+        currentNode.parentNode.removeChild(currentNode);
+        //currentNode.remove();
 
         return node;
       }
@@ -436,7 +441,7 @@
         var innerHTML = node.innerHTML;
         var innerText = wysihtml5.dom.getTextContent(node);
 
-        return (innerText.replace(/\s/,'').length == 0) && (innerHTML && !ALLOWED_EMPTY_NODES_REGEX.test(innerHTML));
+        return (innerText.replace(/\s/,'').length == 0) && (innerHTML !== undefined && !ALLOWED_EMPTY_NODES_REGEX.test(innerHTML));
       }
 
       // Checks if it should open or not a new paragraph when key enter is hit
