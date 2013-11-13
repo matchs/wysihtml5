@@ -9,7 +9,8 @@ wysihtml5.browser = (function() {
       isGecko     = userAgent.indexOf("Gecko")        !== -1 && userAgent.indexOf("KHTML") === -1,
       isWebKit    = userAgent.indexOf("AppleWebKit/") !== -1,
       isChrome    = userAgent.indexOf("Chrome/")      !== -1,
-      isOpera     = userAgent.indexOf("Opera/")       !== -1;
+      isOpera     = userAgent.indexOf("Opera/")       !== -1,
+      isFirefox   = userAgent.indexOf("Firefox")      !== -1;
   
   function iosVersion(userAgent) {
     return +((/ipad|iphone|ipod/.test(userAgent) && userAgent.match(/ os (\d+).+? like mac os x/)) || [, 0])[1];
@@ -354,6 +355,14 @@ wysihtml5.browser = (function() {
      */
     createsNestedInvalidMarkupAfterPaste: function() {
       return isWebKit;
+    },
+
+    /**
+     * Firefox sometimes captures the RETURN keydown event after the next element is created
+     */
+    detectsReturnKeydownAfterItIsDone: function(){
+      return isFirefox;
     }
+
   };
 })();
