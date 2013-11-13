@@ -66,12 +66,14 @@
     shiftEnterEnabled:    true,
     // Emit an event if text has too much upper case words
     autoCheckCase:        false,
-    // Allowed ratio of upper case characters related to the total text length. Ordered by greater priority first.
+    // Allowed ratio of upper case characters related to the total text length. Ordered by greater priority first. E.G.: [0.2, 0.95]
     alertUpperRatio:      [],
     // Allow line breaks inside quotes or only one paragraph
     allowLineBreaksInsideQuotes: true,
     // Auto-resizes the iframe according to content
     autoResize:           false,
+    // Margin in pixels for text bottom length for auto-resizing to start
+    autoResizeMargin: 20,
     // Shortcut for cammands
     shortcuts: {
       bold: 'b',
@@ -79,7 +81,13 @@
       underline: 'u'
     },
     // Disable line breaking
-    titleMode:   false
+    titleMode:   false,
+    // Number of chars before and after the caret to be observed when  applying fix and deny rules.
+    // 3 char before and 3 char after caret is usually enough for dealing with most, or even all, common punctuation situations like: ... or !? or ??? etc
+    caretOffset: {
+      left:3,
+      right:3
+    }
   };
   
   wysihtml5.Editor = wysihtml5.lang.Dispatcher.extend(

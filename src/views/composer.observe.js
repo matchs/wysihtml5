@@ -114,7 +114,7 @@
 
     // --------- Error prevention and auto-correct logic ---------
     dom.observe(element, "keypress", function (event) {
-      var str = that._getTextAroundCaret(event.charCode, 3, 3);
+      var str = that._getTextAroundCaret(event.charCode, that.config.caretOffset.left, that.config.caretOffset.right);
 
       if (that._applyDenyRules(that.config.parserRules.deny, str, event) !== true) {
           that._applyFixRules(that.config.parserRules.fix, str, String.fromCharCode(event.charCode), event);
@@ -131,8 +131,8 @@
 
     if(that.config.autoResize){
       dom.observe(element, ["keyup", "keydown", "paste", "change", "focus", "blur"], function(event){
-        var iframeCurrHeight = parseInt(iframe.style.height.replace("px",""),10);
-        var bodyHeight = Math.min(element.offsetHeight, element.scrollHeight, element.clientHeight) + 20;
+        var iframeCurrHeight = parseInt(iframe.style.height.replace("px",""), 10);
+        var bodyHeight = Math.min(element.offsetHeight, element.scrollHeight, element.clientHeight) + that.config.autoResizeMargin;
 
         if(bodyHeight >= iframeCurrHeight){
           iframe.style.height = bodyHeight + "px";
