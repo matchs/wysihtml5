@@ -377,6 +377,11 @@ wysihtml5.dom.parse = (function() {
     }
   }
 
+  // -------- Apply node parsing rules -------------
+  function _filterTextBasedOnNodeRules(nodeName, text){
+      return (currentRules.tags[nodeName] && currentRules.tags[nodeName].parse && currentRules.tags[nodeName].parse(text)) || text;
+  }
+
   var INVISIBLE_SPACE_REG_EXP = /\uFEFF/g;
   function _handleText(oldNode) {
     var nextSibling = oldNode.nextSibling;
@@ -387,7 +392,10 @@ wysihtml5.dom.parse = (function() {
       // \uFEFF = wysihtml5.INVISIBLE_SPACE (used as a hack in certain rich text editing situations)
       var data = oldNode.data.replace(INVISIBLE_SPACE_REG_EXP, "");
       return oldNode.ownerDocument.createTextNode(
-        _filterTextBasedOnRules(data, currentRules.parser));
+        _filterTextBasedOnNodeRules(oldNode.parentNode.nodeName.toLowerCase(),
+          _filterTextBasedOnRules(data, currentRules.parser)
+        )
+      );
     } 
   }
   

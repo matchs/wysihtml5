@@ -172,7 +172,9 @@ var wysihtml5ParserRules = {
     },
     "iframe": {
       "check_attributes":{
-        "src":"url"
+        "src":"url",
+        "width":"numbers",
+        "height":"numbers"
       }
     },
     "figcaption": {
@@ -185,6 +187,9 @@ var wysihtml5ParserRules = {
       "set_attributes": {
         "rel": "nofollow",
         "target": "_blank"
+      },
+      "parse":function(text){//When dealing with links, remove any whitespace and also put everything to lowercase
+        return text.toLowerCase().replace(/\s+/,'');
       }
     },
     "img": {
@@ -406,6 +411,9 @@ var wysihtml5ParserRules = {
     "h3": {
       "add_class": {
         "align": "align_text"
+      },
+      "parse":function(text){
+        return text.replace(/^[0-9]/i)
       }
     },
     "textarea": {
@@ -568,12 +576,12 @@ var wysihtml5ParserRules = {
       "rule": /\s{2,}/g,
       "replace": " "
     },
-    {
+    /*{
       "rule": /[,:;!?]\S/g,
       "replace": function (txt) {
         return txt.replace(txt[0], txt[0]+' ');
       }
-    },
+    },*/
     {
       "rule": /\s\,/g,
       "replace": ", "
@@ -672,9 +680,29 @@ var wysihtml5ParserRules = {
    */
   "fix": [
     {
-      "rule": /[,:;]\S/i,//Punctuation followed by any non-whitespace character
+      "rule": /[,;]\S/i,//Punctuation followed by any non-whitespace character
       "fix": function (char) {
         if (char in [',',';',':']) {
+          return char + ' '
+        } else {
+          return ' ' + char;
+        }
+      }
+    },
+    {
+      "rule": /:[^\s/]/i,//Inserting white-space after : only if not http:// case
+      "fix": function (char) {
+        if (char == ':') {
+          return char + ' '
+        } else {
+          return ' ' + char;
+        }
+      }
+    },
+    {
+      "rule": /\![^?]|\?[^!]/i,//Inserting white space after ! or ?
+      "fix": function (char) {
+        if (char in ['!', '?']) {
           return char + ' '
         } else {
           return ' ' + char;
