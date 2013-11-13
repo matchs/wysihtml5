@@ -23,7 +23,7 @@
        * put this in the beginning if you don't wan't to match within a word
        *    (^|[\>\(\{\[\s\>])
        */
-      URL_REG_EXP           = /((https?:\/\/|www\.)[^\s<]{3,})/gi,
+      URL_REG_EXP           = /((https?:\/\/|www\.)[^\s<]{3,}\.[^\s]{2,})/gi,
       TRAILING_CHAR_REG_EXP = /([^\w\/\-](,?))$/i,
       MAX_DISPLAY_LENGTH    = 100,
       BRACKETS              = { ")": "(", "]": "[", "}": "{" };
