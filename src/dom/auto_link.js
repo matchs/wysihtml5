@@ -63,9 +63,63 @@
       if (realUrl.substr(0, 4) === "www.") {
         realUrl = "http://" + realUrl;
       }
-      
-      return '<a href="' + realUrl + '">' + displayUrl + '</a>' + punctuation;
+
+      var vidsrc = _isVideoUrl(realUrl);
+      if(!vidsrc){
+        return '<a href="' + realUrl + '">' + displayUrl + '</a>' + punctuation;
+      } else {
+        return _getEmbedVideoHTML(realUrl, vidsrc);
+      }
     });
+  }
+
+  //Checks if a given URL is an youtube video URL
+  function _isYoutube(str){
+    return /(https?:\/\/)?(youtu\.be\/[a-z0-9-_]+|(www\.)?youtube\.com\/(watch\?v=|embed\/)[0-9a-z_-]+)/.test(str) ? 'youtube' : false;
+  }
+
+  //Checks if a given URL is a vimeo video URL
+  function _isVimeo(str){
+    return /(http:\/\/)?((www\.)?|player\.)vimeo\.com/.test(str) ? 'vimeo' : false;
+  }
+
+  //Checks if a given URL is a daily motion URL
+  function _isDailyMotion(str){
+    return /(http:\/\/)?(dai\.ly\/[a-z0-9]+|(www\.)?dailymotion\.com\/(embed\/)?video\/[a-z0-9]+)/mi.test(str) ? 'daily' : false;
+  }
+
+  //Checks if a given URL is a video URL
+  function _isVideoUrl(str){
+    return _isYoutube(str) || _isDailyMotion(str);
+  }
+
+  //Returns the video id from a given URL and a give video source (like youtube or vimeo)
+  function _getVideoId(str, vidsrc){
+    var provs = {
+      'youtube': /[a-zA-Z0-9_-]+(?=\?t=[a-z0-9]+)|(embed\/)?[a-z0-9]+$/mi,
+      'daily': /video\/[a-z0-9-]+|(?!\/)[a-z0-9]+(?=\?)|(?!\/)[a-z0-9]+([^=0-9])$/mi,
+      'vimeo': /[0-9]+(?=\?.+=.+|$)/mi
+    }
+
+    return str.match(provs[vidsrc])[0].replace(/(embed\/|video\/)/,'');
+  }
+
+  //Returns the URL for embed video given a video source and the video id
+  function _getVideoEmbedURL(vidsrc, vidid){
+    var provs = {
+      'youtube': 'http://www.youtube.com/embed/{{VIDID}}',
+      'vimeo': 'http://player.vimeo.com/video/{{VIDID}}?title=0&amp;byline=0&amp;portrait=0',
+      'daily': 'http://www.dailymotion.com/embed/video/{{VIDID}}'
+    }
+
+    return provs[vidsrc].replace('{{VIDID}}', vidid);
+  }
+
+  //Returns the iframe for a embedding a video
+  function _getEmbedVideoHTML(str, vidsrc){
+    var vidid = _getVideoId(str, vidsrc);
+
+    return '<iframe src="'+_getVideoEmbedURL(vidsrc, vidid)+'" width="500px" height="281px"></iframe>';
   }
   
   /**
