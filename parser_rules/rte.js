@@ -527,11 +527,11 @@ var wysihtml5ParserRules = {
    */
   "deny": [
     {
-      "rule": /[\u00a0\t\ ]{2,}/ig,
+      "rule": /[\u00a0\t\ ]{2,}/gi,
       "msg": "Avoid using extra spaces"
     },
     {
-      "rule": /[\u00a0\t\ ][.,:;!?]/ig,
+      "rule": /[\u00a0\t\ ][.,:;!?]/gmi,
       "msg": "Avoid white spaces before punctuation"
     },
     {
@@ -547,7 +547,7 @@ var wysihtml5ParserRules = {
       "msg": "Avoid excessive punctuation"
     },
     {
-      "rule": /[@&*%&#+-]{2,}/g,
+      "rule": /[@&*%$#+-]{2,}/g,
       "msg": "Avoid excessive usage of symbols"
     }
   ],

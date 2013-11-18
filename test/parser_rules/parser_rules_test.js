@@ -106,9 +106,9 @@ $(function(){
      * @param rule
      * @param inputSet Array
      */
-    this.assertDenyRule = function(rule, inputSet){
+    this.assertDenyRule = function(rule, inputSet, expec){
       for(var i in inputSet){
-        equal(rule.rule.test(inputSet[i]), true, 'text '+inputSet[i]+' was denied by rule '+rule.rule);
+        deepEqual(new RegExp(rule.rule).test(inputSet[i]), expec, 'Text "'+inputSet[i]+'" was denied by rule "'+rule.rule+'"');
       }
     }
 
@@ -163,7 +163,7 @@ $(function(){
     var parseRules = wysihtml5ParserRules;
 
     deepEqual(parseRules.classes, {
-      'period-divider': 1,
+      'period-divider': 1
     }, 'The allowed classes are as expected');
 
     var tags = parseRules.tags;
@@ -353,12 +353,56 @@ $(function(){
 
     var denyRules = parseRules.deny;
 
-    testCase.assertDenyRule(denyRules[0], ['Um texto com  espaços extras']);
-    testCase.assertDenyRule(denyRules[1], ['Um texto com espaços antes de pontuação .']);
-    testCase.assertDenyRule(denyRules[2], ["Um texto com espaços no fim da linha \n"]);
-    testCase.assertDenyRule(denyRules[3], ["Um texto com muita exclamação !!!!!!!!"]);
-    testCase.assertDenyRule(denyRules[4], ["Um texto com muita pontuação ....."]);
-    testCase.assertDenyRule(denyRules[5], ["Um texto com muitos símbolos @@@@@@@@"]);
+    testCase.assertDenyRule(denyRules[0], [
+      'Um texto com  espaços extras',
+      "     Um texto     com muuuuitos       espaços extras          "
+    ], true);
+
+    testCase.assertDenyRule(denyRules[1], [
+      'Um texto com espaços antes de pontuação .',
+      'Um texto com espaços antes de pontuação !',
+      'Um texto com espaços antes de pontuação ?',
+      'Um texto com espaços antes de pontuação ;',
+      'Um texto com espaços antes de pontuação :',
+      'Um texto com espaços antes de pontuação ,'
+    ], true);
+
+    testCase.assertDenyRule(denyRules[2], [
+      "Um texto com espaços no fim da linha \n"
+    ], true);
+
+    testCase.assertDenyRule(denyRules[3], ["" +
+      "Um texto com muita exclamação!!!!!!!!",
+      "Um texto com muita interrogação??????",
+      "Um texto com muita exclamação! ! ! ! ! ! ! !",
+      "Um texto com muita interrogação? ? ? ? ? ? ",
+      "Um texto com muita interrogação e exclamação !?!?!???",
+      "Um texto com muita interrogação e exclamação ?!?!?!?!?!!!!"
+    ], true);
+
+    testCase.assertDenyRule(denyRules[4], [
+      "Um texto com muita pontuação .....",
+      "Um texto com muita pontuação ,,,,,",
+      "Um texto com muita pontuação :::::",
+      "Um texto com muita pontuação :,",
+      "Um texto com muita pontuação .,",
+      "Um texto com muita pontuação ,.",
+      "Um texto com muita pontuação ;.",
+      "Um texto com muita pontuação ;:"
+    ], true);
+
+    testCase.assertDenyRule(denyRules[5], [
+      "Um texto com muitos símbolos @@@@@@@@",
+      "Um texto com muitos símbolos @&&",
+      "Um texto com muitos símbolos &&&&",
+      "Um texto com muitos símbolos ****",
+      "Um texto com muitos símbolos %%%%",
+      "Um texto com muitos símbolos -----",
+      "Um texto com muitos símbolos #####",
+      "Um texto com muitos símbolos $$$$$",
+      "Um texto com muitos símbolos @&$%+-",
+      "Um texto com muitos símbolos +++++"
+    ], true);
 
 
     var fixRules = parseRules.fix;
