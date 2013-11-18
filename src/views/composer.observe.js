@@ -122,7 +122,8 @@
     });
 
     dom.observe(element, "keypress", function(event){
-      if(that.selection.getSelectedNode(true).nodeName === "BODY"){
+      var selNode = that.selection.getSelectedNode(true);
+      if(selNode && selNode.nodeName === "BODY"){
         if(that.selection.getText() === ""){
           event.preventDefault();
         }

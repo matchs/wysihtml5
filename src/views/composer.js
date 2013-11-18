@@ -209,6 +209,42 @@
         return element;
       }
 
+      //@fixme Refactor to use document fragments for performance improvement
+      // Inserts a set of nodes sequentially after currentNode
+      this.insertNodes = function(currentNode, nodes){
+        if(nodes.length <= 0) {
+          return currentNode;
+        }
+        currentNode.parentNode.insertBefore(nodes[0], currentNode.nextSibling);
+        return that.insertNodes(nodes[0], nodes.slice(1, nodes.length));
+      }
+
+      //@fixme Refactor to use document fragments for performance improvement
+      // Creates a new empty <p> element
+      this.makeEmptyParagraph = function(){
+        var p = that.doc.createElement('p');
+        p.appendChild(that.doc.createElement('br'));
+
+        return p;
+      }
+
+      //@fixme Refactor to use document fragments for performance improvement
+      // Replaces a given node with a set of given nodes
+      this.replaceNodeWith = function(currentNode, nodes) {
+        var node =  that.insertNodes(currentNode, nodes);
+        currentNode.parentNode.removeChild(currentNode);
+        //currentNode.remove();
+
+        return node;
+      }
+
+      this.nodeIsEmpty = function(node){
+        var innerHTML = node.innerHTML;
+        var innerText = wysihtml5.dom.getTextContent(node);
+
+        return (innerText.replace(/\s/g,'').length == 0) && (innerHTML !== undefined && !ALLOWED_EMPTY_NODES_REGEX.test(innerHTML));
+      }
+
       // Simulate html5 autofocus on contentEditable element
       // This doesn't work on IOS (5.1.1)
       if ((this.textarea.element.hasAttribute("autofocus") || document.querySelector(":focus") == this.textarea.element) && !browser.isIos()) {
@@ -363,35 +399,6 @@
         }
       }
 
-      //@fixme Refactor to use document fragments for performance improvement
-      // Inserts a set of nodes sequentially after currentNode
-      function insertNodes(currentNode, nodes){
-        if(nodes.length <= 0) {
-          return currentNode;
-        }
-        currentNode.parentNode.insertBefore(nodes[0], currentNode.nextSibling);
-        return insertNodes(nodes[0], nodes.slice(1, nodes.length));
-      }
-
-      //@fixme Refactor to use document fragments for performance improvement
-      // Creates a new empty <p> element
-      function makeEmptyParagraph(){
-        var p = that.doc.createElement('p');
-        p.appendChild(that.doc.createElement('br'));
-
-        return p;
-      }
-
-      //@fixme Refactor to use document fragments for performance improvement
-      // Replaces a given node with a set of given nodes
-      function replaceNodeWith(currentNode, nodes) {
-        var node = insertNodes(currentNode, nodes);
-        currentNode.parentNode.removeChild(currentNode);
-        //currentNode.remove();
-
-        return node;
-      }
-
       //Checks if should put an <hr> and returns in wich element or false
       var shouldPutHR = (function(){
         if(that.config.autoInsertHR){
@@ -410,21 +417,21 @@
               }
             }
 
-            if (nodeIsEmpty(currentNode) && (nextSibling && nextSibling.nodeName == "HR" || prevSibling && prevSibling.nodeName == "HR")) { //If there's one hr already
+            if (that.nodeIsEmpty(currentNode) && (nextSibling && nextSibling.nodeName == "HR" || prevSibling && prevSibling.nodeName == "HR")) { //If there's one hr already
               return false;
-            } else if(prevSibling && nodeIsEmpty(prevSibling) && prevSibling.nodeName !== "HR"){
+            } else if(prevSibling && that.nodeIsEmpty(prevSibling) && prevSibling.nodeName !== "HR"){
               if(!prevSibling.previousElementSibling || prevSibling.previousElementSibling.nodeName !== "HR") {
                 return prevSibling;
               } else {
                 return false;
               }
-            } else if(nextSibling && nodeIsEmpty(nextSibling) && nextSibling.nodeName !== "HR") {
+            } else if(nextSibling && that.nodeIsEmpty(nextSibling) && nextSibling.nodeName !== "HR") {
               if(!nextSibling.nextElementSibling || nextSibling.nextElementSibling.nodeName !== "HR") {
                 return nextSibling;
               } else {
                 return false;
               }
-            } else if(!nodeIsEmpty(currentNode)){
+            } else if(!that.nodeIsEmpty(currentNode)){
               return false;
             }
 
@@ -437,11 +444,10 @@
         }
       })();
 
-      function nodeIsEmpty(node){
-        var innerHTML = node.innerHTML;
-        var innerText = wysihtml5.dom.getTextContent(node);
-
-        return (innerText.replace(/\s/,'').length == 0) && (innerHTML !== undefined && !ALLOWED_EMPTY_NODES_REGEX.test(innerHTML));
+      function parseElement(blockElement, keyCode){
+        if(!that.nodeIsEmpty(blockElement) && keyCode === wysihtml5.ENTER_KEY){
+          blockElement.innerHTML = dom.parse(blockElement, that.config.parserRules).innerHTML;
+        }
       }
 
       // Checks if it should open or not a new paragraph when key enter is hit
@@ -456,9 +462,9 @@
             var nextNode = currentNode.nextSibling,
                 prevNode = currentNode.previousSibling;
 
-            if ((currentNode.nodeName === "P" && nodeIsEmpty(currentNode))
-              || (nextNode && nodeIsEmpty(nextNode) && nextNode.nodeName == "P")
-              || (prevNode && nodeIsEmpty(prevNode) && prevNode.nodeName == "P")){
+            if ((currentNode.nodeName === "P" && that.nodeIsEmpty(currentNode))
+              || (nextNode && that.nodeIsEmpty(nextNode) && nextNode.nodeName == "P")
+              || (prevNode && that.nodeIsEmpty(prevNode) && prevNode.nodeName == "P")){
               return false;
             }
             
@@ -517,15 +523,11 @@
             var hrCandidate = shouldPutHR(blockElement);
             if(hrCandidate){
 
-              blockElement.innerHTML = dom.parse(blockElement, {
-                parser : that.config.parserRules.parser
-              }).innerHTML;
-
               var hr = that.doc.createElement('hr');
 
-              var repl = replaceNodeWith(hrCandidate,[hr]);
+              var repl = that.replaceNodeWith(hrCandidate,[hr]);
               if(repl && !repl.nextElementSibling){
-                repl = insertNodes(repl,[makeEmptyParagraph()]);
+                repl = that.insertNodes(repl,[ that.makeEmptyParagraph()]);
                 that.repositionCaretAt(repl);
               }
 
@@ -539,7 +541,11 @@
             }
           } else  if(event.shiftKey && event.keyCode == wysihtml5.ENTER_KEY) {
             event.preventDefault();
-            that.repositionCaretAt(insertNodes(blockElement, [makeEmptyParagraph()]));
+            that.repositionCaretAt(that.insertNodes(blockElement, [ that.makeEmptyParagraph()]));
+          }
+
+          if(browser.insertsLineBreaksOnReturn() && !browser.detectsReturnKeydownAfterItIsDone()){//IE case
+            parseElement(blockElement, keyCode);
           }
 
           setTimeout(function() {
@@ -559,9 +565,9 @@
               }
             }
 
-            if(!nodeIsEmpty(blockElement) && keyCode === wysihtml5.ENTER_KEY){
-              blockElement.innerHTML = dom.parse(blockElement, that.config.parserRules).innerHTML;
-            }
+             if(!browser.hasIframeFocusIssue() && !browser.detectsReturnKeydownAfterItIsDone()){//General case
+                parseElement(blockElement, keyCode);
+             }
 
             if (keyCode === wysihtml5.ENTER_KEY && blockElement.nodeName.match(/^H[1-6]$/)) {
               adjust(selectedNode);
