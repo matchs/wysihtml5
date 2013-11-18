@@ -5,9 +5,12 @@
 
 <title>wysihtml5 - Test Suite</title>
 
-<link rel="stylesheet" href="http://code.jquery.com/qunit/qunit-git.css">
+<!--<link rel="stylesheet" href="http://code.jquery.com/qunit/qunit-git.css">-->
+<link rel="stylesheet" href="libs/qunit/qunit.css">
 
-<script src="http://code.jquery.com/qunit/qunit-git.js"></script>
+<!--<script src="http://code.jquery.com/qunit/qunit-git.js"></script>-->
+<script src="libs/qunit/qunit.js"></script>
+<script src="libs/crossBrowser_initKeyboardEvent.js"></script>
 
 <script src="../src/wysihtml5.js"></script>
 <script src="../lib/rangy/rangy-core.js"></script>
@@ -42,6 +45,7 @@
 <script src="../src/dom/set_styles.js"></script>
 <script src="../src/dom/simulate_placeholder.js"></script>
 <script src="../src/dom/text_content.js"></script>
+<script src="../src/dom/replace_and_become_child.js"></script>
 <script src="../src/quirks/clean_pasted_html.js"></script>
 <script src="../src/quirks/ensure_proper_clearing.js"></script>
 <script src="../src/quirks/get_correct_inner_html.js"></script>
@@ -111,9 +115,11 @@
       '<script src="dom/set_styles_test.js"><\/script>'                   +
       '<script src="dom/set_attributes_test.js"><\/script>'               +
       '<script src="dom/parse_test.js"><\/script>'                        +
+      '<script src="dom/replace_and_become_child_test.js"><\/script>'     +
       '<script src="quirks/clean_pasted_html_test.js"><\/script>'         +
       '<script src="undo_manager_test.js"><\/script>'                     +
-      '<script src="editor_test.js"><\/script>'
+      '<script src="editor_test.js"><\/script>'                           +
+      '<script src="composer/observe_test.js"><\/script>'
     );
   }
 </script>

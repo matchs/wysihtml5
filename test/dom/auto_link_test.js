@@ -109,3 +109,54 @@ test("Basic test", function() {
     "Check if plain HTML markup isn't evaluated"
   );
 });
+
+test('Auto video iframe creation', function(){
+
+  //Auto linking videos
+
+  //youtube videos
+  this.equal(
+    this.autoLink("http://youtu.be/rG6aIVGquOg?t=11m40s"),
+    "<iframe src=\"http://www.youtube.com/embed/rG6aIVGquOg\" width=\"500px\" height=\"281px\"></iframe>",
+    "Check if youtube video iframe is correctly created case 1"
+  );
+
+  this.equal(
+    this.autoLink("http://www.youtube.com/watch?v=rG6aIVGquOg?t=11m40s"),
+    "<iframe src=\"http://www.youtube.com/embed/rG6aIVGquOg\" width=\"500px\" height=\"281px\"></iframe>",
+    "Check if youtube video iframe is correctly created case 2"
+  );
+
+  this.equal(
+    this.autoLink("http://www.youtube.com/embed/rG6aIVGquOg"),
+    "<iframe src=\"http://www.youtube.com/embed/rG6aIVGquOg\" width=\"500px\" height=\"281px\"></iframe>",
+    "Check if youtube video iframe is correctly created case 3"
+  );
+
+  this.equal(
+    this.autoLink("http://youtu.be/rG6aIVGquOg?t=11m40s"),
+    "<iframe src=\"http://www.youtube.com/embed/rG6aIVGquOg\" width=\"500px\" height=\"281px\"></iframe>",
+    "Check if youtube video iframe is correctly created case 4"
+  );
+
+
+  //daily motion videos
+  this.equal(
+    this.autoLink("http://www.dailymotion.com/video/xzz28x_roubo-milionario-em-cannes_news"),
+    "<iframe src=\"http://www.dailymotion.com/embed/video/xzz28x\" width=\"500px\" height=\"281px\"></iframe>",
+    "Check if Daily Motion video iframe is correctly created case 1"
+  );
+
+  this.equal(
+    this.autoLink("http://dai.ly/xzz28x"),
+    "<iframe src=\"http://www.dailymotion.com/embed/video/xzz28x\" width=\"500px\" height=\"281px\"></iframe>",
+    "Check if Daily Motion video iframe is correctly created case 2"
+  );
+
+  this.equal(
+    this.autoLink("http://www.dailymotion.com/embed/video/xzz28x"),
+    "<iframe src=\"http://www.dailymotion.com/embed/video/xzz28x\" width=\"500px\" height=\"281px\"></iframe>",
+    "Check if Daily Motion video iframe is correctly created case 3"
+  );
+
+})

@@ -99,13 +99,13 @@ if (wysihtml5.browser.supported()) {
         '<h2>yes, you!</h2>' +
         '<h3>i\'m old and ready to die</h3>' +
         '<div><video src="pr0n.avi">foobar</video><img src="http://foo.gif" height="10" width="10"><img src="/foo.gif"></div>' +
-        '<div><a href="http://www.google.de"></a></div>',
+        '<div><a href="http://www.google.de">Google</a></div>',
         rules
       ),
       '<h2>take this you snorty little sanitizer</h2>' +
       '<h2>yes, you!</h2>' +
       '<span><img alt="foo" border="1" src="http://foo.gif" height="10" width="10"><img alt="foo" border="1"></span>' +
-      '<span><i title=""></i></span>'
+      '<span><i title="">Google</i></span>'
     );
   });
 
@@ -642,5 +642,64 @@ if (wysihtml5.browser.supported()) {
     var result = this.sanitize(tree, rules);
     equal(result.childNodes.length, 2);
     equal(result.innerHTML, "foo bar baz bam! <span>boobs! hihihi ...</span>");
+  });
+
+  test("_filterTextBasedOnRules", function(){
+    var rules = {
+      tags: { span: 1, div: 1 },
+      "parser":[
+        {
+          "rule":/\!/g,
+          "replace":"$&?"
+        },
+
+      ]
+    };
+
+    var tree = document.createElement("div");
+    tree.appendChild(document.createTextNode("foo "));
+    tree.appendChild(document.createTextNode("bar baz "));
+    tree.appendChild(document.createTextNode("bam! "));
+
+    var span = document.createElement("span");
+    span.innerHTML = "boobs! hihihi ...";
+    tree.appendChild(span);
+
+    var result = this.sanitize(tree, rules);
+    equal(result.childNodes.length, 2);
+    equal(result.innerHTML, "foo bar baz bam!? <span>boobs!? hihihi ...</span>");
+  });
+
+  test("_filterTextBasedOnNodeRules", function(){
+    var rules = {
+      tags: {
+        span: {
+          "parse":function(txt){
+            return txt.toUpperCase().replace(/\s/g,'');
+          }
+        },
+        div: 1
+      },
+      "parser":[
+        {
+          "rule":/\!/g,
+          "replace":"$&?"
+        },
+
+      ]
+    };
+
+    var tree = document.createElement("div");
+    tree.appendChild(document.createTextNode("foo "));
+    tree.appendChild(document.createTextNode("bar baz "));
+    tree.appendChild(document.createTextNode("bam! "));
+
+    var span = document.createElement("span");
+    span.innerHTML = "boobs! hihihi ...";
+    tree.appendChild(span);
+
+    var result = this.sanitize(tree, rules);
+    equal(result.childNodes.length, 2);
+    equal(result.innerHTML, "foo bar baz bam!? <span>BOOBS!?HIHIHI...</span>");
   });
 }
