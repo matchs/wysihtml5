@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JusBrasil Javascript Test Suite</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+    <script type="text/javascript" src="libs/jquery/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="libs/jquery/jquery.ui.core.js"></script>
+    <script type="text/javascript" src="libs/jquery/jquery.effects.core.js"></script>
+    <script type="text/javascript" src="libs/jquery/head.js"></script>
+
+
+
+    <!-- qunit -->
+    <link rel="stylesheet" href="libs/qunit/qunit.css" type="text/css" media="screen" />
+    <script type="text/javascript" src="libs/qunit/qunit.js"></script>
+    <script type="text/javascript" src="../parser_rules/rte.js"></script>
+    <script type="text/javascript" src="parser_rules/parser_rules_test.js"></script>
+
+
+    <script type="text/javascript">
+        // These variables needs to be defined before of the document to be
+        // ready. Is defined _AJAX_URL used in main.js and qunitModule that
+        // is de module of qunit script. The last definition is necessary
+        // because in main.js another function with the name 'module' is defined
+        // and this variable overwrites the module variable of the qunit script.
+        qunitModule = module;
+    </script>
+</head>
+<body>
+<h1 id="qunit-header">JusBrasil Javascript Test Suite</h1>
+<h2 id="qunit-banner"></h2>
+<div id="qunit-testrunner-toolbar"></div>
+<h2 id="qunit-userAgent"></h2>
+<ol id="qunit-tests"></ol>
+<div id="qunit-fixture">test markup, will be hidden</div>
+</body>
+</html>
