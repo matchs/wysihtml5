@@ -131,7 +131,7 @@
     });
 
     if(that.config.autoResize){
-      dom.observe(element, ["keyup", "keydown", "paste", "change", "focus", "blur"], function(event){
+      function doResize(){
         var iframeCurrHeight = parseInt(iframe.style.height.replace("px",""), 10);
         var bodyHeight = Math.min(element.offsetHeight, element.scrollHeight, element.clientHeight) + that.config.autoResizeMargin;
 
@@ -142,6 +142,12 @@
         } else if (iframeCurrHeight > that.minIframeHeight && bodyHeight < that.minIframeHeight){
           iframe.style.height = that.minIframeHeight + "px";
         }
+      };
+
+      doResize();
+
+      dom.observe(element, ["keyup", "keydown", "paste", "change", "focus", "blur"], function(event){
+        doResize();
       });
     }
 

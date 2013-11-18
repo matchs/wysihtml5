@@ -189,7 +189,7 @@ var wysihtml5ParserRules = {
         "target": "_blank"
       },
       "parse":function(text){//When dealing with links, remove any whitespace and also put everything to lowercase
-        return text.toLowerCase().replace(/\s+/,'');
+        return text.toLowerCase().replace(/(?!^)\s+(?!$)/gi,'');
       }
     },
     "img": {
@@ -540,6 +540,10 @@ var wysihtml5ParserRules = {
     "p": {
       "add_class": {
         "align": "align_text"
+      },
+      "parse":function(txt){
+        return txt.replace(/[^.;:?!]$/g,"$&.")
+          .replace(/^[.][.][.]/,"($&)");
       }
     },
     "sub": {
@@ -576,12 +580,12 @@ var wysihtml5ParserRules = {
       "rule": /\s{2,}/g,
       "replace": " "
     },
-    /*{
-      "rule": /[,:;!?]\S/g,
+    {
+      "rule": /[.,:;!?][^\s.]/g,
       "replace": function (txt) {
-        return txt.replace(txt[0], txt[0]+' ');
+        return txt.replace(txt[0]+txt[1], txt[0]+' '+txt[1].toUpperCase());
       }
-    },*/
+    },
     {
       "rule": /\s\,/g,
       "replace": ", "
@@ -605,9 +609,13 @@ var wysihtml5ParserRules = {
       "replace": "!?"
     },
     {
+      "rule": /\.{4,}/g,
+      "replace": '...'
+    },
+    /*{
       "rule": /[^.;:?!]$/g,
       "replace": "$&\."
-    },
+    },*/
     {
       "rule": /\.\s\S/g,
       "replace": function (txt) {
@@ -631,7 +639,7 @@ var wysihtml5ParserRules = {
       }
     },
     {
-      "rule": /\s+[.,;:!?]$/g,
+      "rule": /\s+[.,;:!?]/g,
       "replace": function(txt){
         return txt[txt.length - 1];
       }
@@ -650,6 +658,10 @@ var wysihtml5ParserRules = {
     {
       "rule": /[\u00a0\t\ ]{2,}/ig,
       "msg": "Avoid using extra spaces"
+    },
+    {
+      "rule": /[\u00a0\t\ ][.,:;!?]/ig,
+      "msg": "Avoid white spaces before punctuation"
     },
     {
       "rule": /[\u00a0\t]+\n/img,
@@ -682,7 +694,7 @@ var wysihtml5ParserRules = {
     {
       "rule": /[,;]\S/i,//Punctuation followed by any non-whitespace character
       "fix": function (char) {
-        if (char in [',',';',':']) {
+        if (char in [',',';']) {
           return char + ' '
         } else {
           return ' ' + char;
@@ -700,17 +712,17 @@ var wysihtml5ParserRules = {
       }
     },
     {
-      "rule": /\![^?]|\?[^!]/i,//Inserting white space after ! or ?
+      "rule": /(!|\?)[^!?\s]/i,//Inserting white space after ! or ?
       "fix": function (char) {
         if (char in ['!', '?']) {
           return char + ' '
         } else {
-          return ' ' + char;
+          return ' ' + char.toUpperCase();
         }
       }
     },
     {
-      "rule": /[^.]\.\s[a-zçáàéèíìóòúùñãõüïâêîôû]/,//Period followed by any non-whitespace character
+      "rule": /[^\.][\.!?]\s[a-zçáàéèíìóòúùñãõüïâêîôû]/,//Period followed by any non-whitespace character
       "fix": function (char) {
         return char.toUpperCase();
       }
