@@ -208,14 +208,22 @@
             }
           });
           return;
-        } else if(nodeName == "BLOCKQUOTE") {
+        } else if(nodeName == "BLOCKQUOTE") { //Special condition for dealing with blockquotes to not allow chained quoting
           var selection = composer.selection.getSelection();
           var selectionHtml = selection.toHtml();
-          var selectionDom = dom.getAsDom(selectionHtml)
+          var selectionDom = dom.getAsDom(selectionHtml);
+
+          (function remExtraQuotes(elems){//Removes pre-existent blockquotes and replaces them by its contents
+            if(elems && elems.length > 0){
+              dom.replaceWithChildNodes(elems[0]); //Once destroyed the node ceases to exist inside the array
+              return remExtraQuotes(elems); //Because of that, you don't need to slice the array for recursive calls
+            }
+          })(selectionDom.getElementsByTagName('blockquote'));
+
 
           var range = selection.getRangeAt(0);
-          range.deleteContents();
-          range.insertNode(selectionDom);
+          range.deleteContents(); //The pre-existent content is deleted
+          range.insertNode(selectionDom); //And replaced by the new blockquote
           dom.renameElement(selectionDom, nodeName);
           selection.removeAllRanges();
           return;
