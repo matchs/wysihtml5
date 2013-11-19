@@ -164,20 +164,20 @@ if (wysihtml5.browser.supported()) {
 
     this.equal(
       this.sanitize(
-        '<a href="/foobar"></a>' +
-        '<a href="HTTPS://google.com"></a>' +
-        '<a href="http://google.com"></a>' +
-        '<a href="MAILTO:christopher@foobar.com"></a>' +
-        '<a href="mango time"></a>' +
-        '<a href="ftp://google.com"></a>',
+        '<a href="/foobar">a</a>' +
+        '<a href="HTTPS://google.com">a</a>' +
+        '<a href="http://google.com">a</a>' +
+        '<a href="MAILTO:christopher@foobar.com">a</a>' +
+        '<a href="mango time">a</a>' +
+        '<a href="ftp://google.com">a</a>',
         rules
       ),
-      '<a href="/foobar"></a>' +
-      '<a href="https://google.com"></a>' +
-      '<a href="http://google.com"></a>' +
-      '<a href="mailto:christopher@foobar.com"></a>' +
-      '<a></a>' +
-      '<a></a>'
+      '<a href="/foobar">a</a>' +
+      '<a href="https://google.com">a</a>' +
+      '<a href="http://google.com">a</a>' +
+      '<a href="mailto:christopher@foobar.com">a</a>' +
+      '<a>a</a>' +
+      '<a>a</a>'
     );
   });
 
@@ -233,7 +233,7 @@ if (wysihtml5.browser.supported()) {
     
     this.equal(
       this.sanitize('<span><span class="a">1</span> <span class="b">2</span> <span class="c">3</span></span>', rules, null, true),
-      '<span class="a">1</span> 2 <span class="c">3</span>',
+      '<span class="a">1</span>2<span class="c">3</span>',
       "Senseless 'span' is correctly removed"
     );
   });
@@ -621,7 +621,7 @@ if (wysihtml5.browser.supported()) {
     //      <a href="%7E"></a>
     // which is wrong
     ok(
-      this.sanitize('<a href="http://google.com/~foo"></a>', rules).indexOf("~") !== -1
+      this.sanitize('<a href="http://google.com/~foo">a</a>', rules).indexOf("~") !== -1
     );
   });
   

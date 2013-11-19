@@ -52,12 +52,27 @@
 wysihtml5.dom.parse = (function() {
 
   var ALLOWED_EMPTY_NODES_REGEX = new RegExp("\<img|\<iframe|\<video|\<hr|\<canvas",'i');
+  var ALLOWED_EMPTY_NODENAMES_REGEX = new RegExp("img|iframe|video|hr|canvas|br");
 
   function _nodeIsEmpty(node){
-    var innerHTML = node.innerHTML;
-    var innerText = wysihtml5.dom.getTextContent(node);
+    switch(node.nodeType){
+      case 11: //#document-fragment
+        var res = true;
+        for(var i=0; i< node.childNodes.length; i++){
+          res = res && _nodeIsEmpty(node.childNodes[i]);
+        }
+        return res;
+      case 1: //element
+        var innerHTML = node.innerHTML;
+        var innerText = wysihtml5.dom.getTextContent(node);
+        return (!ALLOWED_EMPTY_NODENAMES_REGEX.test(node.nodeName.toLowerCase()))
+          && (innerText.replace(/\s/g,'').length == 0)
+          && (innerHTML !== undefined && !ALLOWED_EMPTY_NODES_REGEX.test(innerHTML));
 
-    return (innerText.replace(/\s/,'').length == 0) && (innerHTML && !ALLOWED_EMPTY_NODES_REGEX.test(innerHTML));
+
+      case 3: //#text
+        return node.wholeText.replace(/\s/g,'').length == 0;
+    }
   }
   
   /**
@@ -102,7 +117,15 @@ wysihtml5.dom.parse = (function() {
       newNode = _convert(firstChild, cleanUp);
       element.removeChild(firstChild);
       if (newNode && !_nodeIsEmpty(newNode)) {
-          fragment.appendChild(newNode);
+
+
+        fragment.appendChild(newNode);
+        /*if((/body/i.test(element.nodeName) || isString) && newNode.nodeType == 1 && !/P|BLOCKQUOTE/i.test(newNode) && !/P/i.test(newNode.parentNode.nodeName)){
+          //Putting inside a paragraph any immediate child of body that is not a paragraph or a blockquote
+          var p = document.createElement('p');
+          wysihtml5.dom.replaceAndBecomeChild(newNode, p);
+          p = null;
+        }*/
       }
     }
     
@@ -133,7 +156,7 @@ wysihtml5.dom.parse = (function() {
     
     for (i=0; i<oldChildsLength; i++) {
       newChild = _convert(oldChilds[i], cleanUp);
-      if (newChild) {
+      if (newChild && !_nodeIsEmpty(newChild)) {
         newNode.appendChild(newChild);
       }
     }
@@ -208,7 +231,7 @@ wysihtml5.dom.parse = (function() {
       // Remove empty unknown elements
       return null;
     }
-    
+
     newNode = oldNode.ownerDocument.createElement(rule.rename_tag || nodeName);
 
     _handleAttributes(oldNode, newNode, rule);
