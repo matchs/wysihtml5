@@ -56,21 +56,21 @@ wysihtml5.dom.parse = (function() {
 
   function _nodeIsEmpty(node){
     switch(node.nodeType){
-      case 11: //#document-fragment
+      case wysihtml5.DOC_FRAGMENT_NODE: //#document-fragment
         var res = true;
         for(var i=0; i< node.childNodes.length; i++){
           res = res && _nodeIsEmpty(node.childNodes[i]);
         }
         return res;
-      case 1: //element
+
+      case wysihtml5.ELEMENT_NODE: //element
         var innerHTML = node.innerHTML;
         var innerText = wysihtml5.dom.getTextContent(node);
         return (!ALLOWED_EMPTY_NODENAMES_REGEX.test(node.nodeName.toLowerCase()))
           && (innerText.replace(/\s/g,'').length == 0)
           && (innerHTML !== undefined && !ALLOWED_EMPTY_NODES_REGEX.test(innerHTML));
 
-
-      case 3: //#text
+      case wysihtml5.TEXT_NODE: //#text
         return node.wholeText.replace(/\s/g,'').length == 0;
     }
   }
@@ -111,7 +111,9 @@ wysihtml5.dom.parse = (function() {
     } else {
       element = elementOrHtml;
     }
-    
+
+    element.innerHTML = wysihtml5.dom.textParser.parse(element,rules.parser);
+
     while (element.firstChild) {
       firstChild = element.firstChild;
       newNode = _convert(firstChild, cleanUp);
@@ -414,10 +416,13 @@ wysihtml5.dom.parse = (function() {
     } else {
       // \uFEFF = wysihtml5.INVISIBLE_SPACE (used as a hack in certain rich text editing situations)
       var data = oldNode.data.replace(INVISIBLE_SPACE_REG_EXP, "");
-      return oldNode.ownerDocument.createTextNode(
+      /*return oldNode.ownerDocument.createTextNode(
         _filterTextBasedOnNodeRules(oldNode.parentNode.nodeName.toLowerCase(),
           _filterTextBasedOnRules(data, currentRules.parser)
         )
+      );*/
+      return oldNode.ownerDocument.createTextNode(
+        _filterTextBasedOnNodeRules(oldNode.parentNode.nodeName.toLowerCase(), data)
       );
     } 
   }

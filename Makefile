@@ -38,6 +38,7 @@ JS_FILES = src/wysihtml5.js \
   src/dom/simulate_placeholder.js \
   src/dom/text_content.js \
   src/dom/replace_and_become_child.js \
+  src/dom/textParser.js \
   src/quirks/clean_pasted_html.js \
   src/quirks/ensure_proper_clearing.js \
   src/quirks/get_correct_inner_html.js \
