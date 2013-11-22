@@ -460,7 +460,7 @@ var wysihtml5ParserRules = {
     {
       "rule": /[,]\S/g,
       "replace": function(txt){
-        return txt[0] + ' ' + txt[1]
+        return txt[0] + ' ' + txt[1];
       }
     },
     {
@@ -494,7 +494,7 @@ var wysihtml5ParserRules = {
     {
       "rule": /^./g,
       "replace": function (txt) {
-        return txt.toUpperCase()
+        return txt.toUpperCase();
       }
     },
     {
@@ -563,10 +563,10 @@ var wysihtml5ParserRules = {
    */
   "fix": [
     {
-      "rule": /[,;]\S/i,//Punctuation followed by any non-whitespace character
+      "rule": /[,;](\B|[a-zçáàéèíìóòúùñãõüïâêîôû])/i,//Punctuation followed by any non-whitespace character
       "fix": function (char) {
-        if (char in [',',';']) {
-          return char + ' '
+        if (/[,;]/.test(char)) {
+          return char + ' ';
         } else {
           return ' ' + char;
         }
@@ -576,7 +576,7 @@ var wysihtml5ParserRules = {
       "rule": /:[^\s/]/i,//Inserting white-space after : only if not http:// case
       "fix": function (char) {
         if (char == ':') {
-          return char + ' '
+          return char + ' ';
         } else {
           return ' ' + char;
         }
@@ -585,15 +585,15 @@ var wysihtml5ParserRules = {
     {
       "rule": /(!|\?)[^!?\s]/i,//Inserting white space after ! or ?
       "fix": function (char) {
-        if (char in ['!', '?']) {
-          return char + ' '
+        if (/[!?]/.test(char)) {
+          return char + ' ';
         } else {
           return ' ' + char.toUpperCase();
         }
       }
     },
     {
-      "rule": /[^\.][\.!?]\s[a-zçáàéèíìóòúùñãõüïâêîôû]/,//Period followed by any non-whitespace character
+      "rule": /[^\.][!?](\B|[a-zçáàéèíìóòúùñãõüïâêîôû])/,//Period followed by any non-whitespace character
       "fix": function (char) {
         return char.toUpperCase();
       }

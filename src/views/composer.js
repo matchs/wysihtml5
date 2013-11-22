@@ -233,7 +233,6 @@
       this.replaceNodeWith = function(currentNode, nodes) {
         var node =  that.insertNodes(currentNode, nodes);
         currentNode.parentNode.removeChild(currentNode);
-        //currentNode.remove();
 
         return node;
       }
@@ -446,7 +445,7 @@
 
       function parseElement(blockElement, keyCode){
         if(!that.nodeIsEmpty(blockElement) && keyCode === wysihtml5.ENTER_KEY){
-          blockElement.innerHTML = dom.parse(blockElement, that.config.parserRules).innerHTML;
+          blockElement.innerHTML = dom.textParser.parse(blockElement, that.config.parserRules.parser);
         }
       }
 

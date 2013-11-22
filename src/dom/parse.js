@@ -112,7 +112,9 @@ wysihtml5.dom.parse = (function() {
       element = elementOrHtml;
     }
 
-    element.innerHTML = wysihtml5.dom.textParser.parse(element,rules.parser);
+    if(rules && rules.parser){
+      element.innerHTML = wysihtml5.dom.textParser.parse(element,rules.parser);
+    }
 
     while (element.firstChild) {
       firstChild = element.firstChild;

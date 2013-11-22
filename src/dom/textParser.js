@@ -56,7 +56,7 @@ wysihtml5.dom.textParser.extractText = function(node){
       return text + that.extractText(currNode);
     });
   }, function(cnode){
-    return cnode.wholeText + that.TEXT_PLACEMENT_MARKUP;
+    return cnode.textContent + that.TEXT_PLACEMENT_MARKUP;
   });
 };
 
@@ -72,34 +72,17 @@ wysihtml5.dom.textParser.extractText = function(node){
 wysihtml5.dom.textParser.extractNodeMarkup = function(node){
   var that = this;
 
-
   return that.processNode(node, function(node){
     var attr = node.attributes.length > 0 ? node.outerHTML.match(/ .*?(?=>)/)[0] : '';
 
     return '<' + node.nodeName.toLowerCase() + attr + '>' + (function(){
       return that.foldNodes([].slice.call(node.childNodes, 0), '', function(text, currNode){
         return text + that.extractNodeMarkup(currNode);
-      })
+      });
     })() + '</' + node.nodeName.toLowerCase() + '>';
   }, function(node){
     return that.TEXT_PLACEMENT_MARKUP;
   });
-
-/*
-
-  return that.processNode(node, function(cnode){
-    return that.foldNodes([].slice.call(cnode.childNodes, 0), '', function(text, currNode){
-      return that.processNode(currNode, function(innode){
-          var attr = innode.outerHTML.match(/ .*?(?=>)/)[0];
-          return text + '<' + innode.nodeName + attr + '>' + that.extractNodeMarkup(innode) + '<' + innode.nodeName + '>';
-        },function(innode){
-          return that.extractNodeMarkup(innode);
-      });
-    });
-
-  }, function(node){
-    return accum + that.TEXT_PLACEMENT_MARKUP;
-  });*/
 };
 
 /**
@@ -133,10 +116,11 @@ wysihtml5.dom.textParser.parse = function(node, rules){
       return accum + that.extractText(currNode);
     });
 
-    //Replacing the text back in its positions
+    //Replacing the text back in its original position
     return (function foldTokens(tokenSet, template){
       return (tokenSet && tokenSet.length > 0) ?
         foldTokens(tokenSet.slice(1, tokenSet.length), template.replace(that.TEXT_PLACEMENT_MARKUP, tokenSet[0])) : template;
 
-    })(that.applyRules(wholeText.replace(that.TEXT_PLACEMENT_MARKUP_REGEX,''), rules).split(that.TEXT_PLACEMENT_MARKUP), templateText);//Applying the parsing rules and splitting the resulting string
+    })(that.applyRules(wholeText.replace(that.TEXT_PLACEMENT_MARKUP_REGEX,''), rules)//Applying the rules to the text
+      .split(that.TEXT_PLACEMENT_MARKUP), templateText);//Aplitting the resulting string
 };

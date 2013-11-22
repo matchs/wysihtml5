@@ -644,32 +644,6 @@ if (wysihtml5.browser.supported()) {
     equal(result.innerHTML, "foo bar baz bam! <span>boobs! hihihi ...</span>");
   });
 
-  test("_filterTextBasedOnRules", function(){
-    var rules = {
-      tags: { span: 1, div: 1 },
-      "parser":[
-        {
-          "rule":/\!/g,
-          "replace":"$&?"
-        },
-
-      ]
-    };
-
-    var tree = document.createElement("div");
-    tree.appendChild(document.createTextNode("foo "));
-    tree.appendChild(document.createTextNode("bar baz "));
-    tree.appendChild(document.createTextNode("bam! "));
-
-    var span = document.createElement("span");
-    span.innerHTML = "boobs! hihihi ...";
-    tree.appendChild(span);
-
-    var result = this.sanitize(tree, rules);
-    equal(result.childNodes.length, 2);
-    equal(result.innerHTML, "foo bar baz bam!? <span>boobs!? hihihi ...</span>");
-  });
-
   test("_filterTextBasedOnNodeRules", function(){
     var rules = {
       tags: {

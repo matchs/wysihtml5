@@ -26,6 +26,7 @@ var wysihtml5 = {
   
   ELEMENT_NODE: 1,
   TEXT_NODE:    3,
+  DOC_FRAGMENT_NODE: 11,
   
   BACKSPACE_KEY:  8,
   ENTER_KEY:      13,
