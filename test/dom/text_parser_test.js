@@ -99,6 +99,12 @@ test('extractNodeMarkup', function () {
   var node = this.buildDomTree();
   var res = "<p>__#txt__<span>__#txt__</span>__#txt__</p>";
   equal(wysihtml5.dom.textParser.extractNodeMarkup(node), res, 'Text extracted correctly');
+
+  var node2 = document.createElement('p');
+  node2.innerHTML = 'foo<img src="test.img"><hr/>'
+  res = '<p>__#txt__<img src="test.img"><hr></p>'
+
+  equal(wysihtml5.dom.textParser.extractNodeMarkup(node2), res, 'Text extracted correctly event from a node with a self closed element');
 });
 
 test('parse', function () {
