@@ -73,17 +73,28 @@ wysihtml5.dom.textParser.extractNodeMarkup = function(node){
   var that = this;
 
   return that.processNode(node, function(node){
-    var attr = node.attributes.length > 0 ? node.outerHTML.match(/ .*?(?=>)/)[0] : '';
-
-    return '<' + node.nodeName.toLowerCase() + attr + '>' + (function(){
-      return that.foldNodes([].slice.call(node.childNodes, 0), '', function(text, currNode){
-        return text + that.extractNodeMarkup(currNode);
-      });
-    })() + '</' + node.nodeName.toLowerCase() + '>';
+    return that.getNodeMarkupGuts(node);
   }, function(node){
     return that.TEXT_PLACEMENT_MARKUP;
   });
 };
+
+/**
+ *
+ * @param node
+ * @returns {string}
+ */
+wysihtml5.dom.textParser.getNodeMarkupGuts = function(node){
+  var that = this,
+      attr = node.attributes.length > 0 ? node.outerHTML.match(/ .*?(?=>)/)[0] : '';
+
+  return !node.firstChild ? '<' + node.nodeName.toLowerCase() + attr + '>'
+    : '<' + node.nodeName.toLowerCase() + attr + '>' + (function(){
+      return that.foldNodes([].slice.call(node.childNodes, 0), '', function(text, currNode){
+        return text + that.extractNodeMarkup(currNode);
+      });
+    })() + '</' + node.nodeName.toLowerCase() + '>';
+}
 
 /**
  * Applies the rules to a given string
