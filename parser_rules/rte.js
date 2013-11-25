@@ -423,6 +423,15 @@ var wysihtml5ParserRules = {
       "rename_tag": "span"
     }
   },
+
+
+  /**
+   * Preserve rules. Matching texts to this rule won't be affected by the text parser.
+   * Can be used to preserve urls, e-mail, credit card numbers etc
+   * It's mandatory to be a regular or not be declared
+   */
+  "preserve" : /((https?:\/\/|www\.)[^\s<]{3,}\.[^\s]{2,})|(\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b)/gi,
+
   /**
    * Text parsing patterns
    *
