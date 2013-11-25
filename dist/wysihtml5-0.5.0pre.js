@@ -26,6 +26,7 @@ var wysihtml5 = {
   
   ELEMENT_NODE: 1,
   TEXT_NODE:    3,
+  DOC_FRAGMENT_NODE: 11,
   
   BACKSPACE_KEY:  8,
   ENTER_KEY:      13,
@@ -3392,7 +3393,8 @@ wysihtml5.browser = (function() {
       isGecko     = userAgent.indexOf("Gecko")        !== -1 && userAgent.indexOf("KHTML") === -1,
       isWebKit    = userAgent.indexOf("AppleWebKit/") !== -1,
       isChrome    = userAgent.indexOf("Chrome/")      !== -1,
-      isOpera     = userAgent.indexOf("Opera/")       !== -1;
+      isOpera     = userAgent.indexOf("Opera/")       !== -1,
+      isFirefox   = userAgent.indexOf("Firefox")      !== -1;
   
   function iosVersion(userAgent) {
     return +((/ipad|iphone|ipod/.test(userAgent) && userAgent.match(/ os (\d+).+? like mac os x/)) || [, 0])[1];
@@ -3737,7 +3739,15 @@ wysihtml5.browser = (function() {
      */
     createsNestedInvalidMarkupAfterPaste: function() {
       return isWebKit;
+    },
+
+    /**
+     * Firefox sometimes captures the RETURN keydown event after the next element is created
+     */
+    detectsReturnKeydownAfterItIsDone: function(){
+      return isFirefox;
     }
+
   };
 })();wysihtml5.lang.array = function(arr) {
   return {
@@ -3968,7 +3978,7 @@ wysihtml5.browser = (function() {
        * put this in the beginning if you don't wan't to match within a word
        *    (^|[\>\(\{\[\s\>])
        */
-      URL_REG_EXP           = /((https?:\/\/|www\.)[^\s<]{3,})/gi,
+      URL_REG_EXP           = /((https?:\/\/|www\.)[^\s<]{3,}\.[^\s]{2,})/gi,
       TRAILING_CHAR_REG_EXP = /([^\w\/\-](,?))$/i,
       MAX_DISPLAY_LENGTH    = 100,
       BRACKETS              = { ")": "(", "]": "[", "}": "{" };
@@ -4008,9 +4018,63 @@ wysihtml5.browser = (function() {
       if (realUrl.substr(0, 4) === "www.") {
         realUrl = "http://" + realUrl;
       }
-      
-      return '<a href="' + realUrl + '">' + displayUrl + '</a>' + punctuation;
+
+      var vidsrc = _isVideoUrl(realUrl);
+      if(!vidsrc){
+        return '<a href="' + realUrl + '">' + displayUrl + '</a>' + punctuation;
+      } else {
+        return _getEmbedVideoHTML(realUrl, vidsrc);
+      }
     });
+  }
+
+  //Checks if a given URL is an youtube video URL
+  function _isYoutube(str){
+    return /(https?:\/\/)?(youtu\.be\/[a-z0-9-_]+|(www\.)?youtube\.com\/(watch\?v=|embed\/)[0-9a-z_-]+)/.test(str) ? 'youtube' : false;
+  }
+
+  //Checks if a given URL is a vimeo video URL
+  function _isVimeo(str){
+    return /(http:\/\/)?((www\.)?|player\.)vimeo\.com/.test(str) ? 'vimeo' : false;
+  }
+
+  //Checks if a given URL is a daily motion URL
+  function _isDailyMotion(str){
+    return /(http:\/\/)?(dai\.ly\/[a-z0-9]+|(www\.)?dailymotion\.com\/(embed\/)?video\/[a-z0-9]+)/mi.test(str) ? 'daily' : false;
+  }
+
+  //Checks if a given URL is a video URL
+  function _isVideoUrl(str){
+    return _isYoutube(str) || _isDailyMotion(str);
+  }
+
+  //Returns the video id from a given URL and a give video source (like youtube or vimeo)
+  function _getVideoId(str, vidsrc){
+    var provs = {
+      'youtube': /[a-zA-Z0-9_-]+(?=\?t=[a-z0-9]+)|(embed\/)?[a-z0-9]+$/mi,
+      'daily': /video\/[a-z0-9-]+|(?!\/)[a-z0-9]+(?=\?)|(?!\/)[a-z0-9]+([^=0-9])$/mi,
+      'vimeo': /[0-9]+(?=\?.+=.+|$)/mi
+    }
+
+    return str.match(provs[vidsrc])[0].replace(/(embed\/|video\/)/,'');
+  }
+
+  //Returns the URL for embed video given a video source and the video id
+  function _getVideoEmbedURL(vidsrc, vidid){
+    var provs = {
+      'youtube': 'http://www.youtube.com/embed/{{VIDID}}',
+      'vimeo': 'http://player.vimeo.com/video/{{VIDID}}?title=0&amp;byline=0&amp;portrait=0',
+      'daily': 'http://www.dailymotion.com/embed/video/{{VIDID}}'
+    }
+
+    return provs[vidsrc].replace('{{VIDID}}', vidid);
+  }
+
+  //Returns the iframe for a embedding a video
+  function _getEmbedVideoHTML(str, vidsrc){
+    var vidid = _getVideoId(str, vidsrc);
+
+    return '<iframe src="'+_getVideoEmbedURL(vidsrc, vidid)+'" width="500px" height="281px"></iframe>';
   }
   
   /**
@@ -4782,6 +4846,30 @@ wysihtml5.dom.observe = function(element, eventNames, handler) {
  *    // => '<p class="red">foo</p><p>bar</p>'
  */
 wysihtml5.dom.parse = (function() {
+
+  var ALLOWED_EMPTY_NODES_REGEX = new RegExp("\<img|\<iframe|\<video|\<hr|\<canvas",'i');
+  var ALLOWED_EMPTY_NODENAMES_REGEX = new RegExp("img|iframe|video|hr|canvas|br");
+
+  function _nodeIsEmpty(node){
+    switch(node.nodeType){
+      case wysihtml5.DOC_FRAGMENT_NODE: //#document-fragment
+        var res = true;
+        for(var i=0; i< node.childNodes.length; i++){
+          res = res && _nodeIsEmpty(node.childNodes[i]);
+        }
+        return res;
+
+      case wysihtml5.ELEMENT_NODE: //element
+        var innerHTML = node.innerHTML;
+        var innerText = wysihtml5.dom.getTextContent(node);
+        return (!ALLOWED_EMPTY_NODENAMES_REGEX.test(node.nodeName.toLowerCase()))
+          && (innerText.replace(/\s/g,'').length == 0)
+          && (innerHTML !== undefined && !ALLOWED_EMPTY_NODES_REGEX.test(innerHTML));
+
+      case wysihtml5.TEXT_NODE: //#text
+        return node.wholeText.replace(/\s/g,'').length == 0;
+    }
+  }
   
   /**
    * It's not possible to use a XMLParser/DOMParser as HTML5 is not always well-formed XML
@@ -4819,13 +4907,17 @@ wysihtml5.dom.parse = (function() {
     } else {
       element = elementOrHtml;
     }
-    
+
+    if(typeof rules === "object" && rules.parser){
+      element.innerHTML = wysihtml5.dom.textParser.parse(element, rules.parser);
+    }
+
     while (element.firstChild) {
       firstChild = element.firstChild;
       newNode = _convert(firstChild, cleanUp);
       element.removeChild(firstChild);
-      if (newNode) {
-          fragment.appendChild(newNode);
+      if (newNode && !_nodeIsEmpty(newNode)) {
+        fragment.appendChild(newNode);
       }
     }
     
@@ -4834,7 +4926,7 @@ wysihtml5.dom.parse = (function() {
     
     // Insert new DOM tree
     element.appendChild(fragment);
-    
+
     return isString ? wysihtml5.quirks.getCorrectInnerHTML(element) : element;
   }
   
@@ -4856,7 +4948,7 @@ wysihtml5.dom.parse = (function() {
     
     for (i=0; i<oldChildsLength; i++) {
       newChild = _convert(oldChilds[i], cleanUp);
-      if (newChild) {
+      if (newChild && !_nodeIsEmpty(newChild)) {
         newNode.appendChild(newChild);
       }
     }
@@ -4894,7 +4986,7 @@ wysihtml5.dom.parse = (function() {
     if (oldNode.className === "wysihtml5-temp") {
       return null;
     }
-    
+
     /**
      * IE is the only browser who doesn't include the namespace in the
      * nodeName, that's why we have to prepend it by ourselves
@@ -4931,8 +5023,9 @@ wysihtml5.dom.parse = (function() {
       // Remove empty unknown elements
       return null;
     }
-    
+
     newNode = oldNode.ownerDocument.createElement(rule.rename_tag || nodeName);
+
     _handleAttributes(oldNode, newNode, rule);
 
     oldNode = null;
@@ -5087,16 +5180,9 @@ wysihtml5.dom.parse = (function() {
     }
   }
 
-  // -------- Apply changes on pasted text -------------
-  function _filterTextBasedOnRules(text, rules) {
-    if (!rules || rules.length <= 0 || text.length <= 0) {
-      return text;
-    } else {
-      return _filterTextBasedOnRules(
-        text.replace(rules[0].rule, rules[0].replace),
-        rules.slice(1, rules.length)
-      )
-    }
+  // -------- Apply node parsing rules -------------
+  function _filterTextBasedOnNodeRules(nodeName, text){
+      return (currentRules.tags[nodeName] && currentRules.tags[nodeName].parse && currentRules.tags[nodeName].parse(text)) || text;
   }
 
   var INVISIBLE_SPACE_REG_EXP = /\uFEFF/g;
@@ -5108,8 +5194,10 @@ wysihtml5.dom.parse = (function() {
     } else {
       // \uFEFF = wysihtml5.INVISIBLE_SPACE (used as a hack in certain rich text editing situations)
       var data = oldNode.data.replace(INVISIBLE_SPACE_REG_EXP, "");
+
       return oldNode.ownerDocument.createTextNode(
-        _filterTextBasedOnRules(data, currentRules.parser));
+        _filterTextBasedOnNodeRules(oldNode.parentNode.nodeName.toLowerCase(), data)
+      );
     } 
   }
   
@@ -5773,6 +5861,203 @@ wysihtml5.dom.replaceAndBecomeChild = function(oldNode, newNode) {
   newNode.appendChild(oldNode);
 
   return newNode;
+};
+/**
+ * Text Parser
+ * Parses the text in a given node based on a given set of rules
+ *
+ *
+ * @author Mateus Chagas (contato@mateuschagas.com.br) (http://github.com/matchs)
+ */
+wysihtml5.dom.textParser = {};
+wysihtml5.dom.textParser.TEXT_PLACEMENT_MARKUP = '__#txt__';
+wysihtml5.dom.textParser.TEXT_PLACEMENT_MARKUP_REGEX = new RegExp(wysihtml5.dom.textParser.TEXT_PLACEMENT_MARKUP+'$', 'gi');
+wysihtml5.dom.textParser.PRESERVE_MARKUP = '{{PRESERVE}}';
+
+/**
+ * Wrote my own fold function. Didn't use native map or filter for old browser compatibility sake
+ * For more about fold functions {@link http://learnyouahaskell.com/higher-order-functions#folds}
+ *
+ * @param array Set A set of anythin
+ * @param {*} accum The initial value for folding, used for accumulate some value
+ * @param function func A function that will receive accum and one item of the Set
+ * @returns {*} The final accum value
+ */
+wysihtml5.dom.textParser.fold = function (Set, accum, func) {
+  return (Set && Set.length > 0) ?
+    this.fold(Set.slice(1, Set.length), func(accum, Set[0]), func) : accum;
+};
+
+/**
+ * Applies different processing functions depending on the node type
+ *
+ * @param node
+ * @param elementProcessor Function to be executed in case of the node being an elementNode
+ * @param textProcessor Function to be executed in of the node being a text node
+ * @returns {*}
+ */
+wysihtml5.dom.textParser.processNode = function(node, elementProcessor, textProcessor){
+  switch(node.nodeType){
+    case 1: // ELEMENT NODE
+      return elementProcessor(node);
+    case 3: // #TEXT-NODE
+      return textProcessor(node);
+  }
+};
+
+/**
+ * Extracts the text from a given node added of a separator markup for each #text-node
+ *
+ * Ex.: <p> foo, bar baz <a href="http://www.sanger.dk">duh, dah, daz</a>
+ * will return foo, bar baz__#txt__duh, dah, daz__#txt__
+ *
+ * @param node
+ * @returns string
+ */
+wysihtml5.dom.textParser.extractText = function(node, preserve){
+  var that = this;
+  return that.processNode(node, function(cnode){
+    return that.fold([].slice.call(cnode.childNodes, 0), '', function(text, currNode){
+      return text + that.extractText(currNode);
+    });
+  }, function(cnode){
+    return that.preserveMarkup(cnode.textContent, preserve) + that.TEXT_PLACEMENT_MARKUP;
+  });
+};
+
+
+/**
+ * Checks if a given text should or shouldn't be parsed. If it shouldn't the method stores the original text in a var a nd
+ * 
+ * @param  string text
+ * @param  regexp rule
+ * @return string     
+ */
+wysihtml5.dom.textParser.preserveMarkup = function(text, rule) {
+  
+  return rule !== undefined ? text.replace(rule, this.PRESERVE_MARKUP) : text;
+}
+
+/**
+ * Extracts text that shold preserved from the 
+ * 
+ * @param node node 
+ * @param regexp preserve
+ * @return array 
+ */
+wysihtml5.dom.textParser.extractPreserved = function(node, preserve) {
+  var that = this;
+  return that.processNode(node, function(cnode){
+    return that.fold([].slice.call(cnode.childNodes, 0), [], function(preserve_set, currNode){
+      return preserve_set.concat(that.extractPreserved(currNode, preserve));
+    });
+  }, function(cnode){
+    return preserve !== undefined && preserve.test(cnode.textContent) ? cnode.textContent.match(preserve) : [];
+  });
+}
+
+/**
+ * Returns a string with placement markups of the text nodes in a given node
+ *
+ * Ex.: <p> foo, bar baz <a href="http://www.sanger.dk">duh, dah, daz</a>
+ * will return <p>__#txt__<a href="http://www.sanger.dk">__#txt__</a></p>
+ *
+ * @param node
+ * @returns string
+ */
+wysihtml5.dom.textParser.extractNodeMarkup = function(node){
+  var that = this;
+
+  return that.processNode(node, function(node){
+    return that.getNodeMarkupGuts(node);
+  }, function(node){
+    return that.TEXT_PLACEMENT_MARKUP;
+  });
+};
+
+/**
+ * 
+ *
+ * @param node
+ * @returns {string}
+ */
+wysihtml5.dom.textParser.getNodeMarkupGuts = function(node){
+  var that = this,
+      attr = node.attributes.length > 0 ? node.outerHTML.match(/ .*?(?=>)/)[0] : '';
+
+  return !node.firstChild ? '<' + node.nodeName.toLowerCase() + attr + '>'
+    : '<' + node.nodeName.toLowerCase() + attr + '>' + (function(){
+      return that.fold([].slice.call(node.childNodes, 0), '', function(text, currNode){
+        return text + that.extractNodeMarkup(currNode);
+      });
+    })() + '</' + node.nodeName.toLowerCase() + '>';
+}
+
+
+/**
+ * Replace text with the preserved strings
+ * 
+ * @param  array preserved_set  [description]
+ * @param  string text [description]
+ * @return string
+ */
+wysihtml5.dom.textParser.replacePreserved = function(preserved_set, text){
+  var that = this;
+  return that.fold(preserved_set, text, function(txt, preserved_item){
+    return txt.replace(that.PRESERVE_MARKUP, preserved_item);
+  });
+}
+
+/**
+ * Applies the rules to a given string
+ *
+ * @param text
+ * @param rules
+ * @returns {*}
+ */
+wysihtml5.dom.textParser.applyRules = function(text, rules){
+  var that = this;
+  return (rules && rules.length > 0) ?
+    that.applyRules(text.replace(rules[0].rule, rules[0].replace), rules.slice(1, rules.length)) : text;
+};
+
+
+/**
+ * Parses the innerText of a given node according to a given set of rules but preserving its sub-nodes
+ *
+ * @param node node
+ * @param array rules
+ * @param regexp preserve
+ * @returns String Node's innerHTML after applying the rules
+ */
+wysihtml5.dom.textParser.parse = function(node, rules, preserve){
+    var that = this;
+
+    /** It's not elegant, I know =(. But it's easier to make it without having to iterate over the node three times. */
+    var templateText = '';
+    var preserved_set = [];
+    var wholeText = that.fold([].slice.call(node.childNodes, 0), '', function(accum, currNode){//Removing the root node from the response
+      templateText += that.extractNodeMarkup(currNode);
+      preserved_set = preserved_set.concat(that.extractPreserved(currNode, preserve));
+      return accum + that.extractText(currNode, preserve);
+    });
+
+    //Replacing the text back in its original position
+    var text = (function foldTokens(tokenSet, template){
+      return (tokenSet && tokenSet.length > 0) ?
+        foldTokens(tokenSet.slice(1, tokenSet.length), template.replace(that.TEXT_PLACEMENT_MARKUP, tokenSet[0])) : template;
+
+    })(
+        that.applyRules(//Applying the rules to the text
+          wholeText.replace(that.TEXT_PLACEMENT_MARKUP_REGEX,''), 
+          rules
+        ).split(that.TEXT_PLACEMENT_MARKUP), //Splitting the resulting string
+
+        templateText
+      );
+
+    //restoring preserved text
+    return wysihtml5.dom.textParser.replacePreserved(preserved_set, text);
 };
 /**
  * Fix most common html formatting misbehaviors of browsers implementation when inserting
@@ -7200,7 +7485,7 @@ wysihtml5.commands.bold = {
             // Rename current block element to new block element and add class
             if (nodeName) {
 
-              if(nodeName == "BLOCKQUOTE"){
+              if(nodeName == "BLOCKQUOTE") {
                 var blockquote = doc.createElement("blockquote");
                 blockElement = dom.replaceAndBecomeChild(blockElement, blockquote);
               } else {
@@ -7211,6 +7496,25 @@ wysihtml5.commands.bold = {
               _addClass(blockElement, className, classRegExp);
             }
           });
+          return;
+        } else if(nodeName == "BLOCKQUOTE") { //Special condition for dealing with blockquotes to not allow chained quoting
+          var selection = composer.selection.getSelection();
+          var selectionHtml = selection.toHtml();
+          var selectionDom = dom.getAsDom(selectionHtml);
+
+          (function remExtraQuotes(elems){//Removes pre-existent blockquotes and replaces them by its contents
+            if(elems && elems.length > 0){
+              dom.replaceWithChildNodes(elems[0]); //Once destroyed the node ceases to exist inside the array
+              return remExtraQuotes(elems); //Because of that, you don't need to slice the array for recursive calls
+            }
+          })(selectionDom.getElementsByTagName('blockquote'));
+
+
+          var range = selection.getRangeAt(0);
+          range.deleteContents(); //The pre-existent content is deleted
+          range.insertNode(selectionDom); //And replaced by the new blockquote
+          dom.renameElement(selectionDom, nodeName);
+          selection.removeAllRanges();
           return;
         }
       }
@@ -7954,6 +8258,8 @@ wysihtml5.views.View = Base.extend(
   var dom       = wysihtml5.dom,
       browser   = wysihtml5.browser;
 
+  var ALLOWED_EMPTY_NODES_REGEX = new RegExp("\<img|\<iframe|\<video|\<hr|\<canvas",'i');
+
   wysihtml5.views.Composer = wysihtml5.views.View.extend(
     /** @scope wysihtml5.views.Composer.prototype */ {
     name: "composer",
@@ -8136,7 +8442,7 @@ wysihtml5.views.View = Base.extend(
       this._initUndoManager();
       this._initLineBreaking();
 
-      if(that.config.autoFormat){
+      if(that.config.titleMode){
         this._initAutoFormatting();
       }
 
@@ -8147,12 +8453,51 @@ wysihtml5.views.View = Base.extend(
       // Puts the caret immediately after the given node
       this.repositionCaretAt = function(element){
         if (!browser.displaysCaretInEmptyContentEditableCorrectly()) {
-          that.selection.setAfter(element);
+          if(element.innerHTML == ""){
+            element.innerHTML == "<br>";
+          }
+
+          that.selection.setBefore(element.firstChild);
         } else {
           that.selection.selectNode(element, true);
         }
 
         return element;
+      }
+
+      //@fixme Refactor to use document fragments for performance improvement
+      // Inserts a set of nodes sequentially after currentNode
+      this.insertNodes = function(currentNode, nodes){
+        if(nodes.length <= 0) {
+          return currentNode;
+        }
+        currentNode.parentNode.insertBefore(nodes[0], currentNode.nextSibling);
+        return that.insertNodes(nodes[0], nodes.slice(1, nodes.length));
+      }
+
+      //@fixme Refactor to use document fragments for performance improvement
+      // Creates a new empty <p> element
+      this.makeEmptyParagraph = function(){
+        var p = that.doc.createElement('p');
+        p.appendChild(that.doc.createElement('br'));
+
+        return p;
+      }
+
+      //@fixme Refactor to use document fragments for performance improvement
+      // Replaces a given node with a set of given nodes
+      this.replaceNodeWith = function(currentNode, nodes) {
+        var node =  that.insertNodes(currentNode, nodes);
+        currentNode.parentNode.removeChild(currentNode);
+
+        return node;
+      }
+
+      this.nodeIsEmpty = function(node){
+        var innerHTML = node.innerHTML;
+        var innerText = wysihtml5.dom.getTextContent(node);
+
+        return (innerText.replace(/\s/g,'').length == 0) && (innerHTML !== undefined && !ALLOWED_EMPTY_NODES_REGEX.test(innerHTML));
       }
 
       // Simulate html5 autofocus on contentEditable element
@@ -8309,56 +8654,39 @@ wysihtml5.views.View = Base.extend(
         }
       }
 
-      //@fixme Refactor to use document fragments for performance improvement
-      // Inserts a set of nodes sequentially after currentNode
-      function insertNodes(currentNode, nodes){
-        if(nodes.length <= 0) {
-          return currentNode;
-        }
-        currentNode.parentNode.insertBefore(nodes[0], currentNode.nextSibling);
-        return insertNodes(nodes[0], nodes.slice(1, nodes.length));
-      }
-
-      //@fixme Refactor to use document fragments for performance improvement
-      // Creates a new empty <p> element
-      function makeEmptyParagraph(){
-        var p = that.doc.createElement('p');
-        p.appendChild(that.doc.createElement('br'));
-
-        return p;
-      }
-
-      //@fixme Refactor to use document fragments for performance improvement
-      // Replaces a given node with a set of given nodes
-      function replaceNodeWith(currentNode, nodes) {
-        var node = insertNodes(currentNode, nodes);
-        currentNode.remove();
-
-        return node;
-      }
-
       //Checks if should put an <hr> and returns in wich element or false
       var shouldPutHR = (function(){
         if(that.config.autoInsertHR){
           return function (currentNode){
-            var nextSibling = currentNode.nextSibling || false,
-              prevSibling = currentNode.previousSibling || false;
+            var nextSibling = currentNode.nextElementSibling || false,
+              prevSibling = currentNode.previousElementSibling || false,
+              parentNode = currentNode.parentNode || false;
 
-            if(currentNode.parentNode && currentNode.parentNode.nodeName == "BLOCKQUOTE"){
-              return false;
+            if(parentNode){
+              switch (parentNode.nodeName){
+                case "BLOCKQUOTE":
+                  return false;
+                case "DIV":
+                  dom.replaceWithChildNodes(parentNode);
+                  break;
+              }
             }
 
-            if (nodeIsEmpty(currentNode) && (nextSibling && nextSibling.nodeName == "HR" || prevSibling && prevSibling.nodeName == "HR")) { //If there's one hr already
+            if (that.nodeIsEmpty(currentNode) && (nextSibling && nextSibling.nodeName == "HR" || prevSibling && prevSibling.nodeName == "HR")) { //If there's one hr already
               return false;
-            } else if(prevSibling && nodeIsEmpty(prevSibling)){
-              if(!prevSibling.previousSibling || prevSibling.previousSibling.nodeName !== "HR") {
+            } else if(prevSibling && that.nodeIsEmpty(prevSibling) && prevSibling.nodeName !== "HR"){
+              if(!prevSibling.previousElementSibling || prevSibling.previousElementSibling.nodeName !== "HR") {
                 return prevSibling;
               } else {
                 return false;
               }
-            } else if(nextSibling && nodeIsEmpty(nextSibling)) {
-              return nextSibling
-            } else if(!nodeIsEmpty(currentNode)){
+            } else if(nextSibling && that.nodeIsEmpty(nextSibling) && nextSibling.nodeName !== "HR") {
+              if(!nextSibling.nextElementSibling || nextSibling.nextElementSibling.nodeName !== "HR") {
+                return nextSibling;
+              } else {
+                return false;
+              }
+            } else if(!that.nodeIsEmpty(currentNode)){
               return false;
             }
 
@@ -8371,14 +8699,10 @@ wysihtml5.views.View = Base.extend(
         }
       })();
 
-      var nodeIsEmpty = function(node){
-        //return dom.getTextContent(node).replace(/\s|\r|\n/g, '').length === 0 ? true : false;
-        var innerHTML = node.innerHTML;
-        return innerHTML.replace(/\s|\r|\n/g, '') === ""       ||
-          innerHTML === "<br>"        ||
-          innerHTML === "<p></p>"     ||
-          innerHTML === "<p><br></p>" ||
-          false;
+      function parseElement(blockElement, keyCode){
+        if(!that.nodeIsEmpty(blockElement) && keyCode === wysihtml5.ENTER_KEY){
+          blockElement.innerHTML = dom.parse(blockElement, that.config.parserRules).innerHTML;
+        }
       }
 
       // Checks if it should open or not a new paragraph when key enter is hit
@@ -8393,9 +8717,9 @@ wysihtml5.views.View = Base.extend(
             var nextNode = currentNode.nextSibling,
                 prevNode = currentNode.previousSibling;
 
-            if ((currentNode.nodeName === "P" && nodeIsEmpty(currentNode))
-              || (nextNode && nodeIsEmpty(nextNode) && nextNode.nodeName == "P")
-              || (prevNode && nodeIsEmpty(prevNode) && prevNode.nodeName == "P")){
+            if ((currentNode.nodeName === "P" && that.nodeIsEmpty(currentNode))
+              || (nextNode && that.nodeIsEmpty(nextNode) && nextNode.nodeName == "P")
+              || (prevNode && that.nodeIsEmpty(prevNode) && prevNode.nodeName == "P")){
               return false;
             }
             
@@ -8432,7 +8756,12 @@ wysihtml5.views.View = Base.extend(
       dom.observe(this.doc, "keydown", function(event) {
         var keyCode = event.keyCode;
 
-        if (event.shiftKey && keyCode !== wysihtml5.ENTER_KEY) {
+        if(that.config.titleMode && keyCode === wysihtml5.ENTER_KEY){
+          event.preventDefault();
+          return;
+        }
+
+        if (keyCode !== wysihtml5.ENTER_KEY && event.shiftKey) {
           return;
         }
 
@@ -8448,21 +8777,30 @@ wysihtml5.views.View = Base.extend(
 
             var hrCandidate = shouldPutHR(blockElement);
             if(hrCandidate){
+
               var hr = that.doc.createElement('hr');
 
-              var repl = replaceNodeWith(hrCandidate,[hr]);
-              if(repl && !repl.nextSibling){
-                repl = insertNodes(repl,[makeEmptyParagraph()]);
+              var repl = that.replaceNodeWith(hrCandidate,[hr]);
+              if(repl && !repl.nextElementSibling){
+                repl = that.insertNodes(repl,[ that.makeEmptyParagraph()]);
+                that.repositionCaretAt(repl);
               }
 
-              that.repositionCaretAt(repl);
               return;
             } else if(blockElement.parentNode && blockElement.parentNode.nodeName == "BLOCKQUOTE") {
               var blockquote = blockElement.parentNode;
               blockquote.parentNode.insertBefore(blockElement, blockquote.nextSibling);
               that.repositionCaretAt(blockElement);
               return;
+
             }
+          } else  if(event.shiftKey && event.keyCode == wysihtml5.ENTER_KEY) {
+            event.preventDefault();
+            that.repositionCaretAt(that.insertNodes(blockElement, [ that.makeEmptyParagraph()]));
+          }
+
+          if(browser.insertsLineBreaksOnReturn() && !browser.detectsReturnKeydownAfterItIsDone()){//IE case
+            parseElement(blockElement, keyCode);
           }
 
           setTimeout(function() {
@@ -8482,6 +8820,10 @@ wysihtml5.views.View = Base.extend(
               }
             }
 
+             if(!browser.hasIframeFocusIssue() && !browser.detectsReturnKeydownAfterItIsDone()){//General case
+                parseElement(blockElement, keyCode);
+             }
+
             if (keyCode === wysihtml5.ENTER_KEY && blockElement.nodeName.match(/^H[1-6]$/)) {
               adjust(selectedNode);
             }
@@ -8500,20 +8842,12 @@ wysihtml5.views.View = Base.extend(
       var that                              = this,
         USE_NATIVE_LINE_BREAK_INSIDE_TAGS = ["LI", "P", "H1", "H2", "H3", "H4", "H5", "H6"];
 
-      dom.observe(this.element, "keydown", function (event) {
-        return;
-        var blockElement = dom.getParentElement(that.selection.getSelectedNode(), { nodeName: USE_NATIVE_LINE_BREAK_INSIDE_TAGS }, 4);
-
-        if(event.keyCode == wysihtml5.ENTER_KEY && blockElement && blockElement.nodeName === "P"){
-          setTimeout(function(){
-            var newText = dom.getTextContent(blockElement).replace(/^\s*[a-zçáàéèíìóòúùñãõüïâêîôû]/, function(match){
+      dom.observe(this.element, ["blur"],function(){
+        var node = dom.getParentElement(that.selection.getSelectedNode(), { nodeName: USE_NATIVE_LINE_BREAK_INSIDE_TAGS }, 4);
+        if(node){
+          node.innerHTML = node.innerHTML.replace(/^(&nbsp;)+|(&nbsp;)+$/g,'').replace(/^\s*[a-zçáàéèíìóòúùñãõüïâêîôû]/,function(match){
               return match.toUpperCase();
-            }).replace(/[ ]+$/,'')
-              .replace(/[^!?.:;\s]$/g,"$&.");
-
-            dom.setTextContent(blockElement, newText);
-            //that.repositionCaretAt(that.selection.getSelectedNode());
-          }, 10);
+          });
         }
       });
     },
@@ -8539,6 +8873,8 @@ wysihtml5.views.View = Base.extend(
               return;
             }
           }
+
+          that.parent.fire('alertUpperSafe:composer');
         }
       });
     }
@@ -8781,9 +9117,9 @@ wysihtml5.views.View = Base.extend(
     shortcuts[confShortcuts.italic.charCodeAt(0)] = "italic";
     shortcuts[confShortcuts.underline.charCodeAt(0)] = "underline";
 
-    this.minIframeHeight = parseInt(iframe.style.height.replace('px',''),10);
+    this.minIframeHeight = parseInt(iframe.style.height.replace('px',''), 10);
 
-    //----------- Returns the current offset of the carret without counting the line breaks
+    //----------- Returns the current offset of the caret without counting the line breaks
     this._getCaretOffset = (function (el) {
       var doc = el.ownerDocument || el.document;
       var win = doc.defaultView || doc.parentWindow;
@@ -8865,7 +9201,7 @@ wysihtml5.views.View = Base.extend(
 
     // --------- Error prevention and auto-correct logic ---------
     dom.observe(element, "keypress", function (event) {
-      var str = that._getTextAroundCaret(event.charCode, 3, 3);
+      var str = that._getTextAroundCaret(event.charCode, that.config.caretOffset.left, that.config.caretOffset.right);
 
       if (that._applyDenyRules(that.config.parserRules.deny, str, event) !== true) {
           that._applyFixRules(that.config.parserRules.fix, str, String.fromCharCode(event.charCode), event);
@@ -8873,21 +9209,32 @@ wysihtml5.views.View = Base.extend(
     });
 
     dom.observe(element, "keypress", function(event){
-      if(that.selection.getSelectedNode(true).nodeName === "BODY"){
-        event.preventDefault();
+      var selNode = that.selection.getSelectedNode(true);
+      if(selNode && selNode.nodeName === "BODY"){
+        if(that.selection.getText() === ""){
+          event.preventDefault();
+        }
       }
     });
 
     if(that.config.autoResize){
-      dom.observe(element, ["keyup", "keydown", "paste", "change", "focus", "blur"], function(event){
-        var iframeCurrHeight = parseInt(iframe.style.height.replace("px",""),10);
-        var bodyHeight = Math.min(element.offsetHeight, element.scrollHeight, element.clientHeight) + 50;
+      function doResize(){
+        var iframeCurrHeight = parseInt(iframe.style.height.replace("px",""), 10);
+        var bodyHeight = Math.min(element.offsetHeight, element.scrollHeight, element.clientHeight) + that.config.autoResizeMargin;
 
         if(bodyHeight >= iframeCurrHeight){
           iframe.style.height = bodyHeight + "px";
         } else if(bodyHeight > that.minIframeHeight){
           iframe.style.height = (iframeCurrHeight - (iframeCurrHeight - bodyHeight)) + "px";
+        } else if (iframeCurrHeight > that.minIframeHeight && bodyHeight < that.minIframeHeight){
+          iframe.style.height = that.minIframeHeight + "px";
         }
+      };
+
+      doResize();
+
+      dom.observe(element, ["keyup", "keydown", "paste", "change", "focus", "blur"], function(event){
+        doResize();
       });
     }
 
@@ -9859,23 +10206,31 @@ wysihtml5.views.Textarea = wysihtml5.views.View.extend(
     cleanUp:              true,
     // Auto inserts <hr> elements after two consecutive line breaks
     autoInsertHR:         true,
-    // Auto formats capitalization and punctuation
-    autoFormat:           true,
-    // Enables or disables new line when shift+enter keys are pressed
+    // Enables or disables new line when shift+enter keys are pressed*/
     shiftEnterEnabled:    true,
     // Emit an event if text has too much upper case words
     autoCheckCase:        false,
-    // Allowed ratio of upper case characters related to the total text length. Ordered by greater priority first.
+    // Allowed ratio of upper case characters related to the total text length. Ordered by greater priority first. E.G.: [0.2, 0.95]
     alertUpperRatio:      [],
     // Allow line breaks inside quotes or only one paragraph
     allowLineBreaksInsideQuotes: true,
     // Auto-resizes the iframe according to content
     autoResize:           false,
+    // Margin in pixels for text bottom length for auto-resizing to start
+    autoResizeMargin: 20,
     // Shortcut for cammands
     shortcuts: {
       bold: 'b',
       italic: 'i',
       underline: 'u'
+    },
+    // Disable line breaking
+    titleMode:   false,
+    // Number of chars before and after the caret to be observed when  applying fix and deny rules.
+    // 3 char before and 3 char after caret is usually enough for dealing with most, or even all, common punctuation situations like: ... or !? or ??? etc
+    caretOffset: {
+      left:3,
+      right:3
     }
   };
   
