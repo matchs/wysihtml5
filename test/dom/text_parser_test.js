@@ -55,10 +55,10 @@ test('applyRules', function () {
   deepEqual(wysihtml5.dom.textParser.applyRules(text, rules), 'This is a very very wrong text. It has a lot of empty spaces and does end the text without proper punctuation.', 'Rules successfully applied to text');
 });
 
-test('foldNodes', function () {
+test('fold', function () {
   var node = this.buildDomTree();
 
-  var nnodes = wysihtml5.dom.textParser.foldNodes([].slice.call(node.childNodes, 0), 0, function(accum, currNode){
+  var nnodes = wysihtml5.dom.textParser.fold([].slice.call(node.childNodes, 0), 0, function(accum, currNode){
     return accum + 1;
   });
 
@@ -95,6 +95,32 @@ test('extractText', function () {
   equal(wysihtml5.dom.textParser.extractText(node), res, 'Text extracted correctly');
 });
 
+test('preserveMarkup', function() {
+  var text = "Hello World, I'm foo!";
+  var rule = /I\'m/g;
+
+
+  var res = 'Hello World, {{PRESERVE}} foo!';
+  equal(wysihtml5.dom.textParser.preserveMarkup(text, rule), res, 'String preserved');
+});
+
+test('extractPreserved', function(){
+  var node = this.buildDomTree();
+  var rule = /I\'m/g;
+
+
+  var res = ["I'm"]
+  deepEqual(wysihtml5.dom.textParser.extractPreserved(node, rule), res, 'Preserved string successfully retrieved')
+});
+
+test('replacePreserved', function(){
+  var preserved_set = ["hello"];
+  var text = "{{PRESERVE}} World<span>I'm a span</span>Bye world.";
+
+  var res = "hello World<span>I'm a span</span>Bye world.";  
+  equal(wysihtml5.dom.textParser.replacePreserved(preserved_set, text), res, 'Preserved string restored');
+});
+
 test('extractNodeMarkup', function () {
   var node = this.buildDomTree();
   var res = "<p>__#txt__<span>__#txt__</span>__#txt__</p>";
@@ -113,5 +139,9 @@ test('parse', function () {
 
   var res = "Hello World<span>I'm a span</span>Bye world.";
 
-  equal(wysihtml5.dom.textParser.parse(node,rules), res, 'done!');
+  equal(wysihtml5.dom.textParser.parse(node, rules), res, 'Simple parsing applied');
+
+  var preserve = /hello/g;
+  res = "hello World<span>I'm a span</span>Bye world.";
+  equal(wysihtml5.dom.textParser.parse(node, rules, preserve), res, 'Preserving parsing successfully applied');  
 });

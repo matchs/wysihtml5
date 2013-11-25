@@ -8,19 +8,20 @@
 wysihtml5.dom.textParser = {};
 wysihtml5.dom.textParser.TEXT_PLACEMENT_MARKUP = '__#txt__';
 wysihtml5.dom.textParser.TEXT_PLACEMENT_MARKUP_REGEX = new RegExp(wysihtml5.dom.textParser.TEXT_PLACEMENT_MARKUP+'$', 'gi');
+wysihtml5.dom.textParser.PRESERVE_MARKUP = '{{PRESERVE}}';
 
 /**
- * Wrote my own fold function.Didn't use native map or filter for old browser compatibility sake
+ * Wrote my own fold function. Didn't use native map or filter for old browser compatibility sake
+ * For more about fold functions {@link http://learnyouahaskell.com/higher-order-functions#folds}
  *
- *
- * @param nodeSet
- * @param accum The initial value for folding
- * @param func
- * @returns {*}
+ * @param array Set A set of anythin
+ * @param {*} accum The initial value for folding, used for accumulate some value
+ * @param function func A function that will receive accum and one item of the Set
+ * @returns {*} The final accum value
  */
-wysihtml5.dom.textParser.foldNodes = function (nodeSet, accum, func) {
-  return (nodeSet && nodeSet.length > 0) ?
-    this.foldNodes(nodeSet.slice(1, nodeSet.length), func(accum, nodeSet[0]), func) : accum;
+wysihtml5.dom.textParser.fold = function (Set, accum, func) {
+  return (Set && Set.length > 0) ?
+    this.fold(Set.slice(1, Set.length), func(accum, Set[0]), func) : accum;
 };
 
 /**
@@ -49,16 +50,47 @@ wysihtml5.dom.textParser.processNode = function(node, elementProcessor, textProc
  * @param node
  * @returns string
  */
-wysihtml5.dom.textParser.extractText = function(node){
+wysihtml5.dom.textParser.extractText = function(node, preserve){
   var that = this;
   return that.processNode(node, function(cnode){
-    return that.foldNodes([].slice.call(cnode.childNodes, 0), '', function(text, currNode){
+    return that.fold([].slice.call(cnode.childNodes, 0), '', function(text, currNode){
       return text + that.extractText(currNode);
     });
   }, function(cnode){
-    return cnode.textContent + that.TEXT_PLACEMENT_MARKUP;
+    return that.preserveMarkup(cnode.textContent, preserve) + that.TEXT_PLACEMENT_MARKUP;
   });
 };
+
+
+/**
+ * Checks if a given text should or shouldn't be parsed. If it shouldn't the method stores the original text in a var a nd
+ * 
+ * @param  string text
+ * @param  regexp rule
+ * @return string     
+ */
+wysihtml5.dom.textParser.preserveMarkup = function(text, rule) {
+  
+  return rule !== undefined ? text.replace(rule, this.PRESERVE_MARKUP) : text;
+}
+
+/**
+ * Extracts text that shold preserved from the 
+ * 
+ * @param node node 
+ * @param regexp preserve
+ * @return array 
+ */
+wysihtml5.dom.textParser.extractPreserved = function(node, preserve) {
+  var that = this;
+  return that.processNode(node, function(cnode){
+    return that.fold([].slice.call(cnode.childNodes, 0), [], function(preserve_set, currNode){
+      return preserve_set.concat(that.extractPreserved(currNode, preserve));
+    });
+  }, function(cnode){
+    return preserve !== undefined && preserve.test(cnode.textContent) ? cnode.textContent.match(preserve) : [];
+  });
+}
 
 /**
  * Returns a string with placement markups of the text nodes in a given node
@@ -80,6 +112,7 @@ wysihtml5.dom.textParser.extractNodeMarkup = function(node){
 };
 
 /**
+ * 
  *
  * @param node
  * @returns {string}
@@ -90,10 +123,25 @@ wysihtml5.dom.textParser.getNodeMarkupGuts = function(node){
 
   return !node.firstChild ? '<' + node.nodeName.toLowerCase() + attr + '>'
     : '<' + node.nodeName.toLowerCase() + attr + '>' + (function(){
-      return that.foldNodes([].slice.call(node.childNodes, 0), '', function(text, currNode){
+      return that.fold([].slice.call(node.childNodes, 0), '', function(text, currNode){
         return text + that.extractNodeMarkup(currNode);
       });
     })() + '</' + node.nodeName.toLowerCase() + '>';
+}
+
+
+/**
+ * Replace text with the preserved strings
+ * 
+ * @param  array preserved_set  [description]
+ * @param  string text [description]
+ * @return string
+ */
+wysihtml5.dom.textParser.replacePreserved = function(preserved_set, text){
+  var that = this;
+  return that.fold(preserved_set, text, function(txt, preserved_item){
+    return txt.replace(that.PRESERVE_MARKUP, preserved_item);
+  });
 }
 
 /**
@@ -113,25 +161,37 @@ wysihtml5.dom.textParser.applyRules = function(text, rules){
 /**
  * Parses the innerText of a given node according to a given set of rules but preserving its sub-nodes
  *
- * @param node
- * @param rules
+ * @param node node
+ * @param array rules
+ * @param regexp preserve
  * @returns String Node's innerHTML after applying the rules
  */
-wysihtml5.dom.textParser.parse = function(node, rules){
+wysihtml5.dom.textParser.parse = function(node, rules, preserve){
     var that = this;
 
-    /** It's not elegant, I know =(. But it's easier to make it without having to iterate over the node twice. */
+    /** It's not elegant, I know =(. But it's easier to make it without having to iterate over the node three times. */
     var templateText = '';
-    var wholeText = that.foldNodes([].slice.call(node.childNodes, 0), '', function(accum, currNode){
+    var preserved_set = [];
+    var wholeText = that.fold([].slice.call(node.childNodes, 0), '', function(accum, currNode){//Removing the root node from the response
       templateText += that.extractNodeMarkup(currNode);
-      return accum + that.extractText(currNode);
+      preserved_set = preserved_set.concat(that.extractPreserved(currNode, preserve));
+      return accum + that.extractText(currNode, preserve);
     });
 
     //Replacing the text back in its original position
-    return (function foldTokens(tokenSet, template){
+    var text = (function foldTokens(tokenSet, template){
       return (tokenSet && tokenSet.length > 0) ?
         foldTokens(tokenSet.slice(1, tokenSet.length), template.replace(that.TEXT_PLACEMENT_MARKUP, tokenSet[0])) : template;
 
-    })(that.applyRules(wholeText.replace(that.TEXT_PLACEMENT_MARKUP_REGEX,''), rules)//Applying the rules to the text
-      .split(that.TEXT_PLACEMENT_MARKUP), templateText);//Aplitting the resulting string
+    })(
+        that.applyRules(//Applying the rules to the text
+          wholeText.replace(that.TEXT_PLACEMENT_MARKUP_REGEX,''), 
+          rules
+        ).split(that.TEXT_PLACEMENT_MARKUP), //Splitting the resulting string
+
+        templateText
+      );
+
+    //restoring preserved text
+    return wysihtml5.dom.textParser.replacePreserved(preserved_set, text);
 };
