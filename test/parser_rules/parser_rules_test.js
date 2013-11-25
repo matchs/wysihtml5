@@ -143,7 +143,7 @@ $(function(){
     }
 
     /**
-     * Tests if a given rule parses the text inside a give node correctly
+     * Tests if a given rule parses the text inside a given node correctly
      * @param node
      * @param input
      * @param expec
@@ -346,10 +346,6 @@ $(function(){
 
     testCase.assertNodeParserRule(tags, 'a', 'WWW.GOOGLE.COM', 'www.google.com');
     testCase.assertNodeParserRule(tags, 'a', 'WWW . GOOGLE . COM', 'www.google.com');
-
-    testCase.assertNodeParserRule(tags, 'p', 'um texto de teste', 'um texto de teste.');
-    testCase.assertNodeParserRule(tags, 'p', 'um texto de teste!', 'um texto de teste!');
-    testCase.assertNodeParserRule(tags, 'p', '...um texto de teste!', '(...)um texto de teste!');
 
     var denyRules = parseRules.deny;
 
