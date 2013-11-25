@@ -406,12 +406,7 @@ var wysihtml5ParserRules = {
     "ins": {
       "rename_tag": "span"
     },
-    "p": {
-      "parse":function(txt){
-        return txt.replace(/[^.;:?!]$/g,"$&.")
-          .replace(/^[.][.][.]/,"($&)");
-      }
-    },
+    "p": {},
     "frameset": {
       "remove": 1
     },
@@ -440,7 +435,7 @@ var wysihtml5ParserRules = {
   "parser": [
     {
       "rule": /^\s+|\s+$|\,$/g,
-      "replace": ""
+      "replace": function(txt){return ""}
     },
     {
       "rule": /\s{2,}/g,
@@ -449,7 +444,6 @@ var wysihtml5ParserRules = {
     {
       "rule": /[.!?][^\s.]/g,
       "replace": function (txt) {
-        //return txt.replace(txt[0]+txt[1], txt[0]+' '+txt[1].toUpperCase());
         return txt[0] + ' ' + txt[1].toUpperCase();
       }
     },
@@ -472,7 +466,7 @@ var wysihtml5ParserRules = {
       "replace": "?"
     },
     {
-      "rule": /([!?](\s+[!?.,:;])+)/g,
+      "rule": /([!?]([\u00a0\t\ ]+[!?.,:;])+)/g,
       "replace": function (txt) {
         return txt[0];
       }
@@ -486,13 +480,13 @@ var wysihtml5ParserRules = {
       "replace": '...'
     },
     {
-      "rule": /[.!?]\s\S/g,
+      "rule": /[.!?][\u00a0\t\ ]\S/g,
       "replace": function (txt) {
         return txt.toUpperCase();
       }
     },
     {
-      "rule": /^./g,
+      "rule": /^[a-zçáàéèíìóòúùñãõüïâêîôû]/g,
       "replace": function (txt) {
         return txt.toUpperCase();
       }
@@ -520,7 +514,7 @@ var wysihtml5ParserRules = {
   /**
    * Deny patterns
    *
-   * Used to avoid such patterns to me written within editor
+   * Used to avoid such patterns to being written in the editor
    *
    *  - rule: A regular expression to be matched with the future resulting text around the caret position.
    *  - message: A message to be sent through an event. Can be used to warn the user about mistypes etc.
@@ -563,7 +557,7 @@ var wysihtml5ParserRules = {
    */
   "fix": [
     {
-      "rule": /[,;](\B|[a-zçáàéèíìóòúùñãõüïâêîôû])/i,//Punctuation followed by any non-whitespace character
+      "rule": /[,;]\S/i,//Punctuation followed by any non-whitespace character
       "fix": function (char) {
         if (/[,;]/.test(char)) {
           return char + ' ';
@@ -573,7 +567,7 @@ var wysihtml5ParserRules = {
       }
     },
     {
-      "rule": /:[^\s/]/i,//Inserting white-space after : only if not http:// case
+      "rule": /:\S/i,//Inserting white-space after : only if not http:// case
       "fix": function (char) {
         if (char == ':') {
           return char + ' ';
@@ -583,19 +577,16 @@ var wysihtml5ParserRules = {
       }
     },
     {
-      "rule": /(!|\?)[^!?\s]/i,//Inserting white space after ! or ?
-      "fix": function (char) {
-        if (/[!?]/.test(char)) {
-          return char + ' ';
-        } else {
-          return ' ' + char.toUpperCase();
-        }
-      }
-    },
-    {
-      "rule": /[^\.][!?](\B|[a-zçáàéèíìóòúùñãõüïâêîôû])/,//Period followed by any non-whitespace character
+      "rule": /[.][\u00a0\t\ ][a-zçáàéèíìóòúùñãõüïâêîôû]/,//Period followed by any non-whitespace character
       "fix": function (char) {
         return char.toUpperCase();
+      }
+
+    },
+    {
+      "rule": /[!?][^\s!?][a-zçáàéèíìóòúùñãõüïâêîôû]?/,//Period followed by any non-whitespace character
+      "fix": function (char) {
+        return ' ' + char.toUpperCase();
       }
 
     }
