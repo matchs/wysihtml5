@@ -445,7 +445,7 @@
 
       function parseElement(blockElement, keyCode){
         if(!that.nodeIsEmpty(blockElement) && keyCode === wysihtml5.ENTER_KEY){
-          blockElement.innerHTML = dom.textParser.parse(blockElement, that.config.parserRules.parser);
+          blockElement.innerHTML = dom.parse(blockElement, that.config.parserRules).innerHTML;
         }
       }
 

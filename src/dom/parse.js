@@ -112,8 +112,8 @@ wysihtml5.dom.parse = (function() {
       element = elementOrHtml;
     }
 
-    if(rules && rules.parser){
-      element.innerHTML = wysihtml5.dom.textParser.parse(element,rules.parser);
+    if(typeof rules === "object" && rules.parser){
+      element.innerHTML = wysihtml5.dom.textParser.parse(element, rules.parser);
     }
 
     while (element.firstChild) {
@@ -121,15 +121,7 @@ wysihtml5.dom.parse = (function() {
       newNode = _convert(firstChild, cleanUp);
       element.removeChild(firstChild);
       if (newNode && !_nodeIsEmpty(newNode)) {
-
-
         fragment.appendChild(newNode);
-        /*if((/body/i.test(element.nodeName) || isString) && newNode.nodeType == 1 && !/P|BLOCKQUOTE/i.test(newNode) && !/P/i.test(newNode.parentNode.nodeName)){
-          //Putting inside a paragraph any immediate child of body that is not a paragraph or a blockquote
-          var p = document.createElement('p');
-          wysihtml5.dom.replaceAndBecomeChild(newNode, p);
-          p = null;
-        }*/
       }
     }
     
@@ -138,7 +130,7 @@ wysihtml5.dom.parse = (function() {
     
     // Insert new DOM tree
     element.appendChild(fragment);
-    
+
     return isString ? wysihtml5.quirks.getCorrectInnerHTML(element) : element;
   }
   
@@ -392,18 +384,6 @@ wysihtml5.dom.parse = (function() {
     }
   }
 
-  // -------- Apply changes on pasted text -------------
-  function _filterTextBasedOnRules(text, rules) {
-    if (!rules || rules.length <= 0 || text.length <= 0) {
-      return text;
-    } else {
-      return _filterTextBasedOnRules(
-        text.replace(rules[0].rule, rules[0].replace),
-        rules.slice(1, rules.length)
-      )
-    }
-  }
-
   // -------- Apply node parsing rules -------------
   function _filterTextBasedOnNodeRules(nodeName, text){
       return (currentRules.tags[nodeName] && currentRules.tags[nodeName].parse && currentRules.tags[nodeName].parse(text)) || text;
@@ -418,11 +398,7 @@ wysihtml5.dom.parse = (function() {
     } else {
       // \uFEFF = wysihtml5.INVISIBLE_SPACE (used as a hack in certain rich text editing situations)
       var data = oldNode.data.replace(INVISIBLE_SPACE_REG_EXP, "");
-      /*return oldNode.ownerDocument.createTextNode(
-        _filterTextBasedOnNodeRules(oldNode.parentNode.nodeName.toLowerCase(),
-          _filterTextBasedOnRules(data, currentRules.parser)
-        )
-      );*/
+
       return oldNode.ownerDocument.createTextNode(
         _filterTextBasedOnNodeRules(oldNode.parentNode.nodeName.toLowerCase(), data)
       );
