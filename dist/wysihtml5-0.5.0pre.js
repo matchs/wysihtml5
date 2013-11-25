@@ -4909,7 +4909,7 @@ wysihtml5.dom.parse = (function() {
     }
 
     if(typeof rules === "object" && rules.parser){
-      element.innerHTML = wysihtml5.dom.textParser.parse(element, rules.parser);
+      element.innerHTML = wysihtml5.dom.textParser.parse(element, rules.parser, rules.preserve);
     }
 
     while (element.firstChild) {
