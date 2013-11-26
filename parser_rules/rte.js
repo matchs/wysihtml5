@@ -11,9 +11,6 @@ var wysihtml5ParserRules = {
       "set_attributes": {
         "rel": "nofollow",
         "target": "_blank"
-      },
-      "parse":function(text){//When dealing with links, remove any whitespace and also put everything to lowercase
-        return text.toLowerCase().replace(/(?!^)\s+(?!$)/gi,'');
       }
     },
     "abbr": {
@@ -430,7 +427,7 @@ var wysihtml5ParserRules = {
    * Can be used to preserve urls, e-mail, credit card numbers etc
    * It's mandatory to be a regular or not be declared
    */
-  "preserve" : /((https?:\/\/|www\.)[^\s<]{3,}\.[^\s]{2,})|(\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b)/gi,
+  "preserve" : /((https?:\/\/|www\.)[^\s<]{3,}\.[^\s]{2,})|(\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b)|(\b([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5}){1,25}\b)|(\d{2}.?\d{3}.?\d{3}\/?\d{4}-?\d{2})|(\d{3}\.\d{3}\.\d{3}-\d{2})|(^\d{3}\d{3}\d{3}\d{2})/gi,
 
   /**
    * Text parsing patterns
@@ -451,8 +448,14 @@ var wysihtml5ParserRules = {
       "replace": " "
     },
     {
-      "rule": /[.!?][^\s.]/g,
+      "rule": /[!?]\S/g,
       "replace": function (txt) {
+        return txt[0] + ' ' + txt[1].toUpperCase();
+      }
+    },
+    {
+      "rule": /\.\S/g,
+      "replace": function (txt){
         return txt[0] + ' ' + txt[1].toUpperCase();
       }
     },
@@ -489,13 +492,11 @@ var wysihtml5ParserRules = {
       "replace": '...'
     },
     {
-      "rule": /[.!?][\u00a0\t\ ]\S/g,
-      "replace": function (txt) {
-        return txt.toUpperCase();
-      }
+      "rule": /^\.\.\./g,
+      "replace": "($&)"
     },
     {
-      "rule": /^[a-zçáàéèíìóòúùñãõüïâêîôû]/g,
+      "rule": /[.!?][\u00a0\t\ ]\S/g,
       "replace": function (txt) {
         return txt.toUpperCase();
       }
@@ -517,6 +518,16 @@ var wysihtml5ParserRules = {
       "replace": function(txt){
         return txt[txt.length - 1];
       }
+    },
+    {
+      "rule": /^[a-zçáàéèíìóòúùñãõüïâêîôû]/g,
+      "replace": function (txt) {
+        return txt.toUpperCase();
+      }
+    },
+    {
+      "rule": /[^!?:;.]$/gmi,
+      "replace": "$&."
     }
   ],
 
