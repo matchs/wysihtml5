@@ -4125,7 +4125,14 @@ wysihtml5.browser = (function() {
   
   function _parseNode(element) {
     if (IGNORE_URLS_IN.contains(element.nodeName)) {
-      return;
+      if(element.href && _isVideoUrl(element.href)) {
+        var text = element.href;
+
+        wysihtml5.dom.renameElement(element, 'span');
+        element.innerText = element.href;
+      } else {
+        return;  
+      }
     }
     
     if (element.nodeType === wysihtml5.TEXT_NODE && element.data.match(URL_REG_EXP)) {
@@ -5918,7 +5925,7 @@ wysihtml5.dom.textParser.extractText = function(node, preserve){
   var that = this;
   return that.processNode(node, function(cnode){
     return that.fold([].slice.call(cnode.childNodes, 0), '', function(text, currNode){
-      return text + that.extractText(currNode);
+      return text + that.extractText(currNode, preserve);
     });
   }, function(cnode){
     return that.preserveMarkup(cnode.textContent, preserve) + that.TEXT_PLACEMENT_MARKUP;
@@ -6011,9 +6018,9 @@ wysihtml5.dom.textParser.replacePreserved = function(preserved_set, text){
 /**
  * Applies the rules to a given string
  *
- * @param text
- * @param rules
- * @returns {*}
+ * @param string text
+ * @param array rules
+ * @returns string
  */
 wysihtml5.dom.textParser.applyRules = function(text, rules){
   var that = this;
@@ -6025,9 +6032,9 @@ wysihtml5.dom.textParser.applyRules = function(text, rules){
 /**
  * Parses the innerText of a given node according to a given set of rules but preserving its sub-nodes
  *
- * @param node node
- * @param array rules
- * @param regexp preserve
+ * @param node node The node to be parsed
+ * @param array rules The rules for parsing the node's text
+ * @param regexp preserve The rule for pieces of text that mustn't be processed by the parser
  * @returns String Node's innerHTML after applying the rules
  */
 wysihtml5.dom.textParser.parse = function(node, rules, preserve){
@@ -9113,9 +9120,9 @@ wysihtml5.views.View = Base.extend(
         pasteEvents         = ["drop", "paste"];
 
     var confShortcuts = this.config.shortcuts;
-    shortcuts[confShortcuts.bold.charCodeAt(0)] = "bold";
-    shortcuts[confShortcuts.italic.charCodeAt(0)] = "italic";
-    shortcuts[confShortcuts.underline.charCodeAt(0)] = "underline";
+    confShortcuts.bold !== false ? shortcuts[confShortcuts.bold.charCodeAt(0)] = "bold" : false;
+    confShortcuts.italic !== false ? shortcuts[confShortcuts.italic.charCodeAt(0)] = "italic" : false;
+    confShortcuts.underline !== false ? shortcuts[confShortcuts.underline.charCodeAt(0)] = "underline" : false;
 
     this.minIframeHeight = parseInt(iframe.style.height.replace('px',''), 10);
 

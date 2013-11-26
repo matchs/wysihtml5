@@ -26,9 +26,9 @@
         pasteEvents         = ["drop", "paste"];
 
     var confShortcuts = this.config.shortcuts;
-    shortcuts[confShortcuts.bold.charCodeAt(0)] = "bold";
-    shortcuts[confShortcuts.italic.charCodeAt(0)] = "italic";
-    shortcuts[confShortcuts.underline.charCodeAt(0)] = "underline";
+    confShortcuts.bold !== false ? shortcuts[confShortcuts.bold.charCodeAt(0)] = "bold" : false;
+    confShortcuts.italic !== false ? shortcuts[confShortcuts.italic.charCodeAt(0)] = "italic" : false;
+    confShortcuts.underline !== false ? shortcuts[confShortcuts.underline.charCodeAt(0)] = "underline" : false;
 
     this.minIframeHeight = parseInt(iframe.style.height.replace('px',''), 10);
 

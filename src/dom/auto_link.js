@@ -170,7 +170,14 @@
   
   function _parseNode(element) {
     if (IGNORE_URLS_IN.contains(element.nodeName)) {
-      return;
+      if(element.href && _isVideoUrl(element.href)) {
+        var text = element.href;
+
+        wysihtml5.dom.renameElement(element, 'span');
+        element.innerText = element.href;
+      } else {
+        return;  
+      }
     }
     
     if (element.nodeType === wysihtml5.TEXT_NODE && element.data.match(URL_REG_EXP)) {
