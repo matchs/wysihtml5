@@ -88,9 +88,10 @@ bundle:
 	@@mv "${JS_OUTPUT}.tmp" ${JS_OUTPUT}
 
 minify:
-	@@echo "Minifying... (this requires node.js)"
-	@@node build/minify.js ${JS_OUTPUT}
-	@@echo "Done."
+	@@echo "Minifying... (this requires node.js and grunt)"
+#	@@node build/minify.js ${JS_OUTPUT}
+#	@@echo "Done."
+	@@grunt uglify
 
 unittest:
 	@@${OPEN} test/index.html
