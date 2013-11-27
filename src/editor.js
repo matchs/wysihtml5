@@ -200,7 +200,7 @@
         that.composer.selection.executeAndRestore(function() {
           wysihtml5.quirks.cleanPastedHTML(that.composer.element);
           that.parse(that.composer.element);
-        }, keepScrollPosition);
+        }, keepScrollPosition);        
       });
     }
   });

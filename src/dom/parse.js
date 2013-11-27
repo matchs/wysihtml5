@@ -112,10 +112,6 @@ wysihtml5.dom.parse = (function() {
       element = elementOrHtml;
     }
 
-    if(typeof rules === "object" && rules.parser){
-      element.innerHTML = wysihtml5.dom.textParser.parse(element, rules.parser, rules.preserve);
-    }
-
     while (element.firstChild) {
       firstChild = element.firstChild;
       newNode = _convert(firstChild, cleanUp);
@@ -131,6 +127,10 @@ wysihtml5.dom.parse = (function() {
     // Insert new DOM tree
     element.appendChild(fragment);
 
+    if(typeof rules === "object" && rules.parser){
+      element.innerHTML = wysihtml5.dom.textParser.parse(element, rules.parser, rules.preserve);
+    }
+    
     return isString ? wysihtml5.quirks.getCorrectInnerHTML(element) : element;
   }
   
