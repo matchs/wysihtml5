@@ -199,8 +199,11 @@
             that                = this;
         that.composer.selection.executeAndRestore(function() {
           wysihtml5.quirks.cleanPastedHTML(that.composer.element);
+          var textnode = that.composer.selection.getSelection().anchorNode;
           that.parse(that.composer.element);
-        }, keepScrollPosition);        
+          that.focus(textnode);
+        }, keepScrollPosition);
+        
       });
     }
   });

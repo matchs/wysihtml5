@@ -4074,7 +4074,7 @@ wysihtml5.browser = (function() {
   function _getEmbedVideoHTML(str, vidsrc){
     var vidid = _getVideoId(str, vidsrc);
 
-    return '<iframe src="'+_getVideoEmbedURL(vidsrc, vidid)+'" width="500px" height="281px"></iframe>';
+    return '<iframe src="'+_getVideoEmbedURL(vidsrc, vidid)+'" width="480px" height="270px"></iframe>';
   }
   
   /**
@@ -4915,10 +4915,6 @@ wysihtml5.dom.parse = (function() {
       element = elementOrHtml;
     }
 
-    if(typeof rules === "object" && rules.parser){
-      element.innerHTML = wysihtml5.dom.textParser.parse(element, rules.parser, rules.preserve);
-    }
-
     while (element.firstChild) {
       firstChild = element.firstChild;
       newNode = _convert(firstChild, cleanUp);
@@ -4934,6 +4930,10 @@ wysihtml5.dom.parse = (function() {
     // Insert new DOM tree
     element.appendChild(fragment);
 
+    if(typeof rules === "object" && rules.parser){
+      element.innerHTML = wysihtml5.dom.textParser.parse(element, rules.parser, rules.preserve);
+    }
+    
     return isString ? wysihtml5.quirks.getCorrectInnerHTML(element) : element;
   }
   
@@ -10350,8 +10350,11 @@ wysihtml5.views.Textarea = wysihtml5.views.View.extend(
             that                = this;
         that.composer.selection.executeAndRestore(function() {
           wysihtml5.quirks.cleanPastedHTML(that.composer.element);
+          var textnode = that.composer.selection.getSelection().anchorNode;
           that.parse(that.composer.element);
+          that.focus(textnode);
         }, keepScrollPosition);
+        
       });
     }
   });
