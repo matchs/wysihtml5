@@ -12,7 +12,7 @@
   var /**
        * Don't auto-link urls that are contained in the following elements:
        */
-      IGNORE_URLS_IN        = wysihtml5.lang.array(["CODE", "PRE", "A", "SCRIPT", "HEAD", "TITLE", "STYLE"]),
+      IGNORE_URLS_IN        = wysihtml5.lang.array(["CODE", "PRE", "A", "SCRIPT", "HEAD", "TITLE", "STYLE", "IFRAME"]),
       /**
        * revision 1:
        *    /(\S+\.{1}[^\s\,\.\!]+)/g
@@ -119,7 +119,7 @@
   function _getEmbedVideoHTML(str, vidsrc){
     var vidid = _getVideoId(str, vidsrc);
 
-    return '<iframe src="'+_getVideoEmbedURL(vidsrc, vidid)+'" width="480px" height="270px"></iframe>';
+    return '<iframe src="'+_getVideoEmbedURL(vidsrc, vidid)+'" width="480px" height="270px">'+_getVideoEmbedURL(vidsrc, vidid)+'</iframe>';
   }
   
   /**
