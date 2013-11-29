@@ -131,7 +131,7 @@
     });
 
     if(that.config.autoResize){
-      function doResize(){
+      this.doResize = function(){
         var iframeCurrHeight = parseInt(iframe.style.height.replace("px",""), 10);
         var bodyHeight = Math.min(element.offsetHeight, element.scrollHeight, element.clientHeight) + that.config.autoResizeMargin;
 
@@ -144,11 +144,13 @@
         }
       };
 
-      doResize();
+      this.doResize();
 
       dom.observe(element, ["keyup", "keydown", "paste", "change", "focus", "blur"], function(event){
-        doResize();
+        that.doResize();
       });
+    } else {
+      this.doResize = function() {}
     }
 
     // --------- destroy:composer event ---------

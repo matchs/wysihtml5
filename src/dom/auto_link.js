@@ -119,7 +119,7 @@
   function _getEmbedVideoHTML(str, vidsrc){
     var vidid = _getVideoId(str, vidsrc);
 
-    return '<iframe src="'+_getVideoEmbedURL(vidsrc, vidid)+'" width="480px" height="270px">'+_getVideoEmbedURL(vidsrc, vidid)+'</iframe>';
+    return '<iframe src="'+_getVideoEmbedURL(vidsrc, vidid)+'" width="496px" height="278px">'+_getVideoEmbedURL(vidsrc, vidid)+'</iframe>';
   }
   
   /**

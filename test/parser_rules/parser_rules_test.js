@@ -342,11 +342,6 @@ $(function(){
       "align": "align_text"
     });
 
-
-
-    testCase.assertNodeParserRule(tags, 'a', 'WWW.GOOGLE.COM', 'www.google.com');
-    testCase.assertNodeParserRule(tags, 'a', 'WWW . GOOGLE . COM', 'www.google.com');
-
     var denyRules = parseRules.deny;
 
     testCase.assertDenyRule(denyRules[0], [
@@ -468,7 +463,7 @@ $(function(){
     var parserRules = parseRules.parser;
 
     var text = " este é um texto com muitos erros.Alguns bem grosseiros .Outros , nem tanto,nem tão pouco . Espaços    repetidos !!!! acredita???? Símbolos @@@@ repetidos .... muitos deles várias vezes ";
-    var expec = "Este é um texto com muitos erros. Alguns bem grosseiros. Outros, nem tanto, nem tão pouco. Espaços repetidos! Acredita? Símbolos @ repetidos... Muitos deles várias vezes"
+    var expec = "Este é um texto com muitos erros. Alguns bem grosseiros. Outros, nem tanto, nem tão pouco. Espaços repetidos! Acredita? Símbolos @ repetidos... Muitos deles várias vezes."
 
     testCase.assertParserRules(parserRules, text, expec);
 

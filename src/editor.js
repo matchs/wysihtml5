@@ -202,6 +202,7 @@
           var textnode = that.composer.selection.getSelection().anchorNode;
           that.parse(that.composer.element);
           that.focus(textnode);
+          that.dom.autoLink(textnode.parentNode);
         }, keepScrollPosition);
         
       });

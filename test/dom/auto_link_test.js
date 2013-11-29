@@ -113,7 +113,7 @@ test("Basic test", function() {
 test('Auto video iframe creation', function(){
 
   //Auto linking videos
-  var w = "480px", h="270px";
+  var w = "486px", h="273px";
 
 
   //youtube videos

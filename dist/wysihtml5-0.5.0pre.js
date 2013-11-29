@@ -3967,7 +3967,7 @@ wysihtml5.browser = (function() {
   var /**
        * Don't auto-link urls that are contained in the following elements:
        */
-      IGNORE_URLS_IN        = wysihtml5.lang.array(["CODE", "PRE", "A", "SCRIPT", "HEAD", "TITLE", "STYLE"]),
+      IGNORE_URLS_IN        = wysihtml5.lang.array(["CODE", "PRE", "A", "SCRIPT", "HEAD", "TITLE", "STYLE", "IFRAME"]),
       /**
        * revision 1:
        *    /(\S+\.{1}[^\s\,\.\!]+)/g
@@ -4074,7 +4074,7 @@ wysihtml5.browser = (function() {
   function _getEmbedVideoHTML(str, vidsrc){
     var vidid = _getVideoId(str, vidsrc);
 
-    return '<iframe src="'+_getVideoEmbedURL(vidsrc, vidid)+'" width="480px" height="270px"></iframe>';
+    return '<iframe src="'+_getVideoEmbedURL(vidsrc, vidid)+'" width="496px" height="278px">'+_getVideoEmbedURL(vidsrc, vidid)+'</iframe>';
   }
   
   /**
@@ -9225,7 +9225,7 @@ wysihtml5.views.View = Base.extend(
     });
 
     if(that.config.autoResize){
-      function doResize(){
+      this.doResize = function(){
         var iframeCurrHeight = parseInt(iframe.style.height.replace("px",""), 10);
         var bodyHeight = Math.min(element.offsetHeight, element.scrollHeight, element.clientHeight) + that.config.autoResizeMargin;
 
@@ -9238,11 +9238,13 @@ wysihtml5.views.View = Base.extend(
         }
       };
 
-      doResize();
+      this.doResize();
 
       dom.observe(element, ["keyup", "keydown", "paste", "change", "focus", "blur"], function(event){
-        doResize();
+        that.doResize();
       });
+    } else {
+      this.doResize = function() {}
     }
 
     // --------- destroy:composer event ---------
@@ -10353,6 +10355,7 @@ wysihtml5.views.Textarea = wysihtml5.views.View.extend(
           var textnode = that.composer.selection.getSelection().anchorNode;
           that.parse(that.composer.element);
           that.focus(textnode);
+          that.dom.autoLink(textnode.parentNode);
         }, keepScrollPosition);
         
       });

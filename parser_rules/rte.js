@@ -448,15 +448,15 @@ var wysihtml5ParserRules = {
       "replace": " "
     },
     {
-      "rule": /[!?]\S/g,
+      "rule": /[\.!?][a-zçáàéèíìóòúùñãõüïâêîôû]/gi,
       "replace": function (txt) {
         return txt[0] + ' ' + txt[1].toUpperCase();
       }
     },
     {
-      "rule": /\.\S/g,
-      "replace": function (txt){
-        return txt[0] + ' ' + txt[1].toUpperCase();
+      "rule": /[\.!?][\u00a0\t\ ][a-zçáàéèíìóòúùñãõüïâêîôû]/g,
+      "replace": function (txt) {
+        return txt.toUpperCase();
       }
     },
     {
@@ -604,9 +604,9 @@ var wysihtml5ParserRules = {
 
     },
     {
-      "rule": /[!?][^\s!?][a-zçáàéèíìóòúùñãõüïâêîôû]?/,//Period followed by any non-whitespace character
+      "rule": /[!?][\u00a0\t\ ][a-zçáàéèíìóòúùñãõüïâêîôû]?/,//Period followed by any non-whitespace character
       "fix": function (char) {
-        return ' ' + char.toUpperCase();
+        return char.toUpperCase();
       }
 
     }
