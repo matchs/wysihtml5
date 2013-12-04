@@ -392,7 +392,7 @@ wysihtml5.dom.parse = (function() {
   var INVISIBLE_SPACE_REG_EXP = /\uFEFF/g;
   function _handleText(oldNode) {
     var nextSibling = oldNode.nextSibling;
-    if (nextSibling && nextSibling.nodeType === wysihtml5.TEXT_NODE) {
+    if (nextSibling && nextSibling.nodeType === wysihtml5.TEXT_NODE && nextSibling.nodeName !== 'br') {
       // Concatenate text nodes
       nextSibling.data = oldNode.data + nextSibling.data;
     } else {
