@@ -279,19 +279,27 @@
         return;
       }
 
+      function doAutoLink(){
+        if (dom.getTextContent(that.element).match(dom.autoLink.URL_REG_EXP)) {
+          that.selection.executeAndRestore(function(startContainer, endContainer) {
+            dom.autoLink(endContainer.parentNode);
+            that.doResize();
+          });
+        }
+      }
+ 
       // Only do the auto linking by ourselves when the browser doesn't support auto linking
       // OR when he supports auto linking but we were able to turn it off (IE9+)
       if (!supportsAutoLinking || (supportsAutoLinking && supportsDisablingOfAutoLinking)) {
-        this.parent.on("newword:composer", function() {
-          if (dom.getTextContent(that.element).match(dom.autoLink.URL_REG_EXP)) {
-            that.selection.executeAndRestore(function(startContainer, endContainer) {
-              dom.autoLink(endContainer.parentNode);
-            });
-          }
-        });
-
-        dom.observe(this.element, "blur", function() {
+        this.parent.on("newword:composer", doAutoLink);
+        this.parent.on("paste:composer", doAutoLink);
+        this.parent.on("enable:composer", doAutoLink);
+        this.parent.on("beforeload", doAutoLink);
+ 
+ 
+        dom.observe(this.element, ["blur", "focus", "load", "beforeload"], function() {
           dom.autoLink(that.element);
+          that.doResize();
         });
       }
 
