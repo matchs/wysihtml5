@@ -75,7 +75,7 @@
 
   //Checks if a given URL is an youtube video URL
   function _isYoutube(str){
-    return /(https?:\/\/)?(youtu\.be\/[a-z0-9-_]+|(www\.)?youtube\.com\/(watch\?v=|embed\/)[0-9a-z_-]+)/.test(str) ? 'youtube' : false;
+    return /(https?:\/\/)?(youtu\.be\/[a-z0-9_-]+|(www\.)?youtube\.com\/(watch\?v=|embed\/)[0-9a-z_-]+)/i.test(str) ? 'youtube' : false;
   }
 
   //Checks if a given URL is a vimeo video URL
@@ -96,12 +96,12 @@
   //Returns the video id from a given URL and a give video source (like youtube or vimeo)
   function _getVideoId(str, vidsrc){
     var provs = {
-      'youtube': /[a-zA-Z0-9_-]+(?=\?t=[a-z0-9]+)|(embed\/)?[a-z0-9]+$/mi,
+      'youtube': /[a-zA-Z_0-9_-]+(?=\?t=[a-z0-9_-]+)|(embed\/)?[a-z0-9_-]+$|watch\?v\=[a-z0-9_-]+/mi,
       'daily': /video\/[a-z0-9-]+|(?!\/)[a-z0-9]+(?=\?)|(?!\/)[a-z0-9]+([^=0-9])$/mi,
       'vimeo': /[0-9]+(?=\?.+=.+|$)/mi
     }
 
-    return str.match(provs[vidsrc])[0].replace(/(embed\/|video\/)/,'');
+    return str.match(provs[vidsrc])[0].replace(/(embed\/|video\/|watch\?v\=)/,'');
   }
 
   //Returns the URL for embed video given a video source and the video id
