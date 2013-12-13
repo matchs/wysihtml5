@@ -70,11 +70,11 @@
     // --------- Returns the text around the caret from lookback to lookahead
     this._getTextAroundCaret = function (charCode, lookback, lookahead) {
       var itxt = dom.getTextContent(that.element).replace(/\n|^\b/g, '');
-      var char = String.fromCharCode(charCode);
+      var chatTxt = String.fromCharCode(charCode);
 
       var caretPos = that._getCaretOffset();
       var str = itxt.substring(caretPos - lookback, caretPos + lookahead);
-      return str.slice(0, lookback) + char + str.slice(lookback, str.length - 1);
+      return str.slice(0, lookback) + chatTxt + str.slice(lookback, str.length - 1);
     }
 
     // --------- Error prevention logic ---------
@@ -94,32 +94,32 @@
     }
 
     // --------- Auto-correct logic ---------
-    this._applyFixRules = function (rules, txt, char, event) {
+    this._applyFixRules = function (rules, txt, chatTxt, event) {
       if (rules.length <= 0) {
         return false;
       } else if (rules[0].rule.test(txt)) {
         event.preventDefault();
-        var fixed = rules[0].fix(char);
+        var fixed = rules[0].fix(chatTxt);
         that.commands.exec("insertHTML", fixed);
         that.parent.fire("fix:composer", {
           rule:rules[0],
-          text:char,
-          fixed:rules[0].fix(char)
+          text:chatTxt,
+          fixed:rules[0].fix(chatTxt)
         });
         return;
       } else {
-        return this._applyFixRules(rules.slice(1, rules.length), txt, char, event);
+        return this._applyFixRules(rules.slice(1, rules.length), txt, chatTxt, event);
       }
     }
 
     // --------- Error prevention and auto-correct logic ---------
-    dom.observe(element, "keypress", function (event) {
+    /*dom.observe(element, "keypress", function (event) {
       var str = that._getTextAroundCaret(event.charCode, that.config.caretOffset.left, that.config.caretOffset.right);
 
       if (that._applyDenyRules(that.config.parserRules.deny, str, event) !== true) {
           that._applyFixRules(that.config.parserRules.fix, str, String.fromCharCode(event.charCode), event);
       }
-    });
+    });*/
 
     dom.observe(element, "keypress", function(event){
       var selNode = that.selection.getSelectedNode(true);
