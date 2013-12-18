@@ -35,23 +35,29 @@
 
         // firefox and ie sometimes don't remove the image handles, even though the image got removed
         wysihtml5.quirks.redraw(composer.element);
-        return;
-      }
-
-      image = doc.createElement(NODE_NAME);
-      
-      for (var i in value) {
-        image.setAttribute(i === "className" ? "class" : i, value[i]);
-      }
-
-      composer.selection.insertNode(image);
-      if (wysihtml5.browser.hasProblemsSettingCaretAfterImg()) {
-        textNode = doc.createTextNode(wysihtml5.INVISIBLE_SPACE);
-        composer.selection.insertNode(textNode);
-        composer.selection.setAfter(textNode);
       } else {
-        composer.selection.setAfter(image);
+        image = doc.createElement(NODE_NAME);
+      
+        for (var i in value) {
+          image.setAttribute(i === "className" ? "class" : i, value[i]);
+        }
+
+        var container = doc.createElement('p');
+        container.appendChild(image);
+
+        //composer.selection.insertNode(image);
+        composer.selection.insertNode(container);
+        if (wysihtml5.browser.hasProblemsSettingCaretAfterImg()) {
+          textNode = doc.createTextNode(wysihtml5.INVISIBLE_SPACE);
+          composer.selection.insertNode(textNode);
+          composer.selection.setAfter(textNode);
+        } else {
+          //composer.selection.setAfter(image);
+          composer.selection.setAfter(container);
+        }
       }
+
+      composer.parent.fire("insertimage:composer");
     },
 
     state: function(composer) {

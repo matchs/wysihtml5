@@ -144,11 +144,13 @@
         }
       };
 
+      //resizing on startup
       this.doResize();
-
-      dom.observe(element, ["keyup", "keydown", "paste", "change", "focus", "blur"], function(event){
-        that.doResize();
-      });
+      dom.observe(element, ["change:composer", "keyup", "keydown", "paste", "change", "focus", "blur"], that.doResize);
+      var events = ["disable:composer", "enable:composer", "insertimage:composer","beforeload", "load", "aftercommand:composer", "change:composer", "newword:composer", "change"];
+      for(var e in events){
+        that.parent.on(e, that.doResize);
+      }
     } else {
       this.doResize = function() {}
     }

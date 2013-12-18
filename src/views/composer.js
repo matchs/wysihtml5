@@ -3,6 +3,7 @@
       browser   = wysihtml5.browser;
 
   var ALLOWED_EMPTY_NODES_REGEX = new RegExp("\<img|\<iframe|\<video|\<hr|\<canvas",'i');
+  var ALLOWED_EMPTY_NODENAMES_REGEX = new RegExp("img|iframe|video|hr|canvas|br");
 
   wysihtml5.views.Composer = wysihtml5.views.View.extend(
     /** @scope wysihtml5.views.Composer.prototype */ {
@@ -237,11 +238,31 @@
         return node;
       }
 
-      this.nodeIsEmpty = function(node){
+      /*this.nodeIsEmpty = function(node){
         var innerHTML = node.innerHTML;
         var innerText = wysihtml5.dom.getTextContent(node);
 
         return (innerText.replace(/\s/g,'').length == 0) && (innerHTML !== undefined && !ALLOWED_EMPTY_NODES_REGEX.test(innerHTML));
+      }*/
+      this.nodeIsEmpty = function(node){
+        switch(node.nodeType){
+          case wysihtml5.DOC_FRAGMENT_NODE: //#document-fragment
+            var res = true;
+            for(var i=0; i< node.childNodes.length; i++){
+              res = res && _nodeIsEmpty(node.childNodes[i]);
+            }
+            return res;
+
+          case wysihtml5.ELEMENT_NODE: //element
+            var innerHTML = node.innerHTML;
+            var innerText = wysihtml5.dom.getTextContent(node);
+            return (!ALLOWED_EMPTY_NODENAMES_REGEX.test(node.nodeName.toLowerCase()))
+              && (innerText.replace(/\s/g,'').length == 0)
+              && (innerHTML !== undefined && !ALLOWED_EMPTY_NODES_REGEX.test(innerHTML));
+
+          case wysihtml5.TEXT_NODE: //#text
+            return node.wholeText.replace(/\s/g,'').length == 0;
+        }
       }
 
       // Simulate html5 autofocus on contentEditable element
@@ -295,6 +316,7 @@
         this.parent.on("paste:composer", doAutoLink);
         this.parent.on("enable:composer", doAutoLink);
         this.parent.on("beforeload", doAutoLink);
+        this.parent.on("load", doAutoLink);
  
  
         dom.observe(this.element, ["blur", "focus", "load", "beforeload"], function() {
