@@ -17,6 +17,24 @@ wysihtml5.views.Textarea = wysihtml5.views.View.extend(
     if (parse) {
       value = this.parent.parse(value);
     }
+
+    var iframes = value.match(/<iframe .*?>/g);//replacing iframes for anchors
+
+    if(iframes && iframes.length > 0){
+      for(var i in iframes){
+        var src = iframes[i].match(/src=".*?"/)[0].replace('src','href'),
+        width = iframes[i].match(/width=".*?"/)[0],
+        height = iframes[i].match(/height=".*?"/)[0];
+
+        value = value.replace(iframes[i], "<a data-media=\"embed-video\"" + src + " " + width + " " + height + ">");
+      }
+      value = value.replace(/\/iframe>/g,'/a>');          
+    }
+
+    value = value.replace('&nbsp;',' ')//replacing &nbsp; with white spaces
+        .replace(/<p[^>]*?>(<br\/?>| +)?<\/p>/gi, '')//removing empty paragraphs
+        .replace(/(^<hr[^>]*?>)|(<hr[^>]*?>$)/gi,'');//removing <hr> at the end or begining of the text
+
     return value;
   },
   
