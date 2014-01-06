@@ -11,13 +11,20 @@ module.exports = function(grunt) {
         src: 'dist/<%= pkg.name %>-<%= pkg.version %>.js',
         dest: 'dist/<%= pkg.name %>-<%= pkg.version %>.min.js'
       }
+    },
+    qunit: {
+      all:['test/parser_rules.html']
     }
   });
 
   // Load the plugin that provides the "uglify" task.
   grunt.loadNpmTasks('grunt-contrib-uglify');
+  grunt.loadNpmTasks('grunt-contrib-qunit');
+  
+  grunt.registerTask('test', ['qunit']);
 
   // Default task(s).
-  grunt.registerTask('default', ['uglify']);
+  grunt.registerTask('default', ['qunit', 'uglify']);
+
 
 };

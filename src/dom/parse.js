@@ -54,6 +54,8 @@ wysihtml5.dom.parse = (function() {
   var ALLOWED_EMPTY_NODES_REGEX = new RegExp("\<img|\<iframe|\<video|\<hr|\<canvas",'i');
   var ALLOWED_EMPTY_NODENAMES_REGEX = new RegExp("img|iframe|video|hr|canvas|br");
 
+  parent = this.parent;
+
   function _nodeIsEmpty(node){
     switch(node.nodeType){
       case wysihtml5.DOC_FRAGMENT_NODE: //#document-fragment

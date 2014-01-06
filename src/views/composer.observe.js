@@ -146,11 +146,18 @@
 
       //resizing on startup
       this.doResize();
-      dom.observe(element, ["change:composer", "keyup", "keydown", "paste", "change", "focus", "blur"], that.doResize);
-      var events = ["disable:composer", "enable:composer", "insertimage:composer","beforeload", "load", "aftercommand:composer", "change:composer", "newword:composer", "change"];
-      for(var e in events){
-        that.parent.on(e, that.doResize);
-      }
+      dom.observe(element, ["imageloaded:composer", "change:composer", "keyup", "keydown", "paste", "change", "focus", "blur"], that.doResize);
+      that.parent.on("disable:composer", that.doResize);
+      that.parent.on("enable:composer", that.doResize);
+      that.parent.on("imageloaded:composer", that.doResize);
+      that.parent.on("beforeload", that.doResize);
+      that.parent.on("load", that.doResize);
+      that.parent.on("aftercommand:composer", that.doResize);
+      that.parent.on("change:composer", that.doResize);
+      that.parent.on("newword:composer", that.doResize);
+      that.parent.on("change", that.doResize);
+      that.parent.on('imageloaded:composer',that.doResize);
+
     } else {
       this.doResize = function() {}
     }
