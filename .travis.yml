@@ -1,4 +1,9 @@
 before_script:
-  - sudo npm install -g grunt
+  - npm install
 
 script: grunt test --verbose --force
+
+language: node_js
+
+node_js:
+  - 0.10.22
