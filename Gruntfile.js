@@ -13,7 +13,7 @@ module.exports = function(grunt) {
       }
     },
     qunit: {
-      all:['test/parser_rules.html']
+      all:['test/*.html']
     }
   });
 

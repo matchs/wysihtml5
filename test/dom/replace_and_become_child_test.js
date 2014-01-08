@@ -29,6 +29,6 @@ test("Basic test", function() {
   var result = wysihtml5.dom.replaceAndBecomeChild(oldNode,newNode);
 
   ok(result == newNode);
-  ok(newNode.firstElementChild, oldNode);
+  ok(newNode.firstElementChild == oldNode);
   ok(this.container.firstElementChild == newNode);
 });

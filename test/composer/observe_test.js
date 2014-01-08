@@ -52,7 +52,7 @@ if (wysihtml5.browser.supported()) {
     }
   });
 
-  asyncTest('_applyDenyRules while typing', function () {
+  /*asyncTest('_applyDenyRules while typing', function () {
     expect(2);
 
     var that = this;
@@ -146,7 +146,7 @@ if (wysihtml5.browser.supported()) {
       start();
     }, 100);
 
-  });
+  });*/
 
   asyncTest('Composer dom handling methods', function(){
     var that = this;
