@@ -42,6 +42,10 @@
           image.setAttribute(i === "className" ? "class" : i, value[i]);
         }
 
+        image.onload = function(){
+          composer.parent.fire('imageloaded:composer');
+        }
+
         var container = doc.createElement('p');
         container.appendChild(image);
 
@@ -56,8 +60,6 @@
           composer.selection.setAfter(container);
         }
       }
-
-      composer.parent.fire("insertimage:composer");
     },
 
     state: function(composer) {

@@ -121,6 +121,25 @@
       }
     });*/
 
+    /**
+     * Checks if a given node is child of some node of a kind
+     * @param  Element  child           The child node
+     * @param  string  expectedNodeName The parent node name 
+     * @return {Boolean}                 
+     */
+    this._isChildOf = function(child, expectedNodeName){
+      var parent = child.parentNode;
+      while(parent){
+        if(parent.nodeName == expectedNodeName){
+          return true;
+        } else {
+          parent = parent.parentNode;
+        }
+      }
+
+      return false;
+    }
+
     dom.observe(element, "keypress", function(event){
       var selNode = that.selection.getSelectedNode(true);
       if(selNode && selNode.nodeName === "BODY"){
@@ -282,6 +301,21 @@
         event.preventDefault();
       }
     });
+
+    // --------- Make sure that when pressing backspace/delete on a blockquote, it is unmade ---------
+    dom.observe(element, "keydown", function(event) {
+      var target  = that.selection.getSelectedNode(true),
+          keyCode = event.keyCode,
+          parent;
+      if (keyCode === wysihtml5.BACKSPACE_KEY //if it's pressed backspace
+        && that.selection.getSelection().anchorOffset == 0 //and it's trying to delete it
+        && that._isChildOf(target,"BLOCKQUOTE")) { //and it's in a blockquote
+        
+        that.parent.toolbar.execCommand("formatBlock","blockquote");
+        event.preventDefault();
+      }
+    });
+
 
     // --------- IE 8+9 focus the editor when the iframe is clicked (without actually firing the 'focus' event on the <body>) ---------
     if (browser.hasIframeFocusIssue()) {
