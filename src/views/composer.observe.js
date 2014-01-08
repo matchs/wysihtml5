@@ -127,11 +127,11 @@
      * @param  string  expectedNodeName The parent node name 
      * @return {Boolean}                 
      */
-    this._isChildOf = function(child, expectedNodeName){
+    this._isChildOfA = function(child, expectedNodeName){
       var parent = child.parentNode;
       while(parent){
         if(parent.nodeName == expectedNodeName){
-          return true;
+          return parent;
         } else {
           parent = parent.parentNode;
         }
@@ -308,11 +308,18 @@
           keyCode = event.keyCode,
           parent;
       if (keyCode === wysihtml5.BACKSPACE_KEY //if it's pressed backspace
-        && that.selection.getSelection().anchorOffset == 0 //and it's trying to delete it
-        && that._isChildOf(target,"BLOCKQUOTE")) { //and it's in a blockquote
-        
-        that.parent.toolbar.execCommand("formatBlock","blockquote");
-        event.preventDefault();
+        && that.selection.getSelection().anchorOffset == 0) { //and it's trying to delete it
+        parent = that._isChildOfA(target,"BLOCKQUOTE");
+        if(parent) { //and it's inside a blockquote
+          
+          var range = that.selection.getRange();
+          range.setStartBefore(parent);
+          var content = range.cloneContents();
+          if(content.textContent.length <= 0){ //and finally, if it's at the beginning of the blockquote
+            that.parent.toolbar.execCommand("formatBlock","blockquote");
+            event.preventDefault();
+          }
+        }
       }
     });
 
