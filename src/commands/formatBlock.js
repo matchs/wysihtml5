@@ -209,14 +209,17 @@
           });
           return;
         } else if(nodeName == "BLOCKQUOTE") { //Special condition for dealing with blockquotes to not allow chained quoting
-          composer.selection.executeAndRestore(function(){
             var selection = composer.selection.getSelection();
-            var selectionHtml = selection.toHtml();
-            var selectionDom = dom.getAsDom(selectionHtml);
+
+            var range = selection.getRangeAt(0);
+            range.setStartBefore(range.startContainer.parentNode);
+            range.setEndAfter(range.endContainer.parentNode);
+
+            var selectionDom = dom.getAsDom(range.toHtml());
 
             if(!selection || selection.rangeCount <= 0){
               return;
-            }
+            }            
 
             (function remExtraQuotes(elems){//Removes pre-existent blockquotes and replaces them by its contents
               if(elems && elems.length > 0){
@@ -225,14 +228,11 @@
               }
             })(selectionDom.getElementsByTagName('blockquote'));
 
-
-            var range = selection.getRangeAt(0);
             range.deleteContents(); //The pre-existent content is deleted
             range.insertNode(selectionDom); //And replaced by the new blockquote
             dom.renameElement(selectionDom, nodeName);
             selection.removeAllRanges();
             return;
-          });
         }
       }
 

@@ -4030,7 +4030,7 @@ wysihtml5.browser = (function() {
 
   //Checks if a given URL is an youtube video URL
   function _isYoutube(str){
-    return /(https?:\/\/)?(youtu\.be\/[a-z0-9-_]+|(www\.)?youtube\.com\/(watch\?v=|embed\/)[0-9a-z_-]+)/.test(str) ? 'youtube' : false;
+    return /(https?:\/\/)?(youtu\.be\/[a-z0-9_-]+|(www\.)?youtube\.com\/(watch\?v=|embed\/)[0-9a-z_-]+)/i.test(str) ? 'youtube' : false;
   }
 
   //Checks if a given URL is a vimeo video URL
@@ -4051,12 +4051,12 @@ wysihtml5.browser = (function() {
   //Returns the video id from a given URL and a give video source (like youtube or vimeo)
   function _getVideoId(str, vidsrc){
     var provs = {
-      'youtube': /[a-zA-Z0-9_-]+(?=\?t=[a-z0-9]+)|(embed\/)?[a-z0-9]+$/mi,
+      'youtube': /[a-zA-Z_0-9_-]+(?=\?t=[a-z0-9_-]+)|(embed\/)?[a-z0-9_-]+$|watch\?v\=[a-z0-9_-]+/mi,
       'daily': /video\/[a-z0-9-]+|(?!\/)[a-z0-9]+(?=\?)|(?!\/)[a-z0-9]+([^=0-9])$/mi,
       'vimeo': /[0-9]+(?=\?.+=.+|$)/mi
     }
 
-    return str.match(provs[vidsrc])[0].replace(/(embed\/|video\/)/,'');
+    return str.match(provs[vidsrc])[0].replace(/(embed\/|video\/|watch\?v\=)/,'');
   }
 
   //Returns the URL for embed video given a video source and the video id
@@ -4155,7 +4155,8 @@ wysihtml5.browser = (function() {
   
   // Reveal url reg exp to the outside
   wysihtml5.dom.autoLink.URL_REG_EXP = URL_REG_EXP;
-})(wysihtml5);(function(wysihtml5) {
+})(wysihtml5);
+(function(wysihtml5) {
   var api = wysihtml5.dom;
   
   api.addClass = function(element, className) {
@@ -4857,6 +4858,8 @@ wysihtml5.dom.parse = (function() {
   var ALLOWED_EMPTY_NODES_REGEX = new RegExp("\<img|\<iframe|\<video|\<hr|\<canvas",'i');
   var ALLOWED_EMPTY_NODENAMES_REGEX = new RegExp("img|iframe|video|hr|canvas|br");
 
+  parent = this.parent;
+
   function _nodeIsEmpty(node){
     switch(node.nodeType){
       case wysihtml5.DOC_FRAGMENT_NODE: //#document-fragment
@@ -5195,7 +5198,7 @@ wysihtml5.dom.parse = (function() {
   var INVISIBLE_SPACE_REG_EXP = /\uFEFF/g;
   function _handleText(oldNode) {
     var nextSibling = oldNode.nextSibling;
-    if (nextSibling && nextSibling.nodeType === wysihtml5.TEXT_NODE) {
+    if (nextSibling && nextSibling.nodeType === wysihtml5.TEXT_NODE && nextSibling.nodeName !== 'br') {
       // Concatenate text nodes
       nextSibling.data = oldNode.data + nextSibling.data;
     } else {
@@ -7505,24 +7508,30 @@ wysihtml5.commands.bold = {
           });
           return;
         } else if(nodeName == "BLOCKQUOTE") { //Special condition for dealing with blockquotes to not allow chained quoting
-          var selection = composer.selection.getSelection();
-          var selectionHtml = selection.toHtml();
-          var selectionDom = dom.getAsDom(selectionHtml);
+            var selection = composer.selection.getSelection();
 
-          (function remExtraQuotes(elems){//Removes pre-existent blockquotes and replaces them by its contents
-            if(elems && elems.length > 0){
-              dom.replaceWithChildNodes(elems[0]); //Once destroyed the node ceases to exist inside the array
-              return remExtraQuotes(elems); //Because of that, you don't need to slice the array for recursive calls
-            }
-          })(selectionDom.getElementsByTagName('blockquote'));
+            var range = selection.getRangeAt(0);
+            range.setStartBefore(range.startContainer.parentNode);
+            range.setEndAfter(range.endContainer.parentNode);
 
+            var selectionDom = dom.getAsDom(range.toHtml());
 
-          var range = selection.getRangeAt(0);
-          range.deleteContents(); //The pre-existent content is deleted
-          range.insertNode(selectionDom); //And replaced by the new blockquote
-          dom.renameElement(selectionDom, nodeName);
-          selection.removeAllRanges();
-          return;
+            if(!selection || selection.rangeCount <= 0){
+              return;
+            }            
+
+            (function remExtraQuotes(elems){//Removes pre-existent blockquotes and replaces them by its contents
+              if(elems && elems.length > 0){
+                dom.replaceWithChildNodes(elems[0]); //Once destroyed the node ceases to exist inside the array
+                return remExtraQuotes(elems); //Because of that, you don't need to slice the array for recursive calls
+              }
+            })(selectionDom.getElementsByTagName('blockquote'));
+
+            range.deleteContents(); //The pre-existent content is deleted
+            range.insertNode(selectionDom); //And replaced by the new blockquote
+            dom.renameElement(selectionDom, nodeName);
+            selection.removeAllRanges();
+            return;
         }
       }
 
@@ -7548,7 +7557,8 @@ wysihtml5.commands.bold = {
       });
     }
   };
-})(wysihtml5);/**
+})(wysihtml5);
+/**
  * formatInline scenarios for tag "B" (| = caret, |foo| = selected text)
  *
  *   #1 caret in unformatted text:
@@ -7688,22 +7698,30 @@ wysihtml5.commands.bold = {
 
         // firefox and ie sometimes don't remove the image handles, even though the image got removed
         wysihtml5.quirks.redraw(composer.element);
-        return;
-      }
-
-      image = doc.createElement(NODE_NAME);
-      
-      for (var i in value) {
-        image.setAttribute(i === "className" ? "class" : i, value[i]);
-      }
-
-      composer.selection.insertNode(image);
-      if (wysihtml5.browser.hasProblemsSettingCaretAfterImg()) {
-        textNode = doc.createTextNode(wysihtml5.INVISIBLE_SPACE);
-        composer.selection.insertNode(textNode);
-        composer.selection.setAfter(textNode);
       } else {
-        composer.selection.setAfter(image);
+        image = doc.createElement(NODE_NAME);
+      
+        for (var i in value) {
+          image.setAttribute(i === "className" ? "class" : i, value[i]);
+        }
+
+        image.onload = function(){
+          composer.parent.fire('imageloaded:composer');
+        }
+
+        var container = doc.createElement('p');
+        container.appendChild(image);
+
+        //composer.selection.insertNode(image);
+        composer.selection.insertNode(container);
+        if (wysihtml5.browser.hasProblemsSettingCaretAfterImg()) {
+          textNode = doc.createTextNode(wysihtml5.INVISIBLE_SPACE);
+          composer.selection.insertNode(textNode);
+          composer.selection.setAfter(textNode);
+        } else {
+          //composer.selection.setAfter(image);
+          composer.selection.setAfter(container);
+        }
       }
     },
 
@@ -7748,7 +7766,8 @@ wysihtml5.commands.bold = {
       return imagesInSelection[0];
     }
   };
-})(wysihtml5);(function(wysihtml5) {
+})(wysihtml5);
+(function(wysihtml5) {
   var LINE_BREAK = "<br>" + (wysihtml5.browser.needsSpaceAfterLineBreak() ? " " : "");
   
   wysihtml5.commands.insertLineBreak = {
@@ -8266,6 +8285,7 @@ wysihtml5.views.View = Base.extend(
       browser   = wysihtml5.browser;
 
   var ALLOWED_EMPTY_NODES_REGEX = new RegExp("\<img|\<iframe|\<video|\<hr|\<canvas",'i');
+  var ALLOWED_EMPTY_NODENAMES_REGEX = new RegExp("img|iframe|video|hr|canvas|br");
 
   wysihtml5.views.Composer = wysihtml5.views.View.extend(
     /** @scope wysihtml5.views.Composer.prototype */ {
@@ -8500,11 +8520,31 @@ wysihtml5.views.View = Base.extend(
         return node;
       }
 
-      this.nodeIsEmpty = function(node){
+      /*this.nodeIsEmpty = function(node){
         var innerHTML = node.innerHTML;
         var innerText = wysihtml5.dom.getTextContent(node);
 
         return (innerText.replace(/\s/g,'').length == 0) && (innerHTML !== undefined && !ALLOWED_EMPTY_NODES_REGEX.test(innerHTML));
+      }*/
+      this.nodeIsEmpty = function(node){
+        switch(node.nodeType){
+          case wysihtml5.DOC_FRAGMENT_NODE: //#document-fragment
+            var res = true;
+            for(var i=0; i< node.childNodes.length; i++){
+              res = res && _nodeIsEmpty(node.childNodes[i]);
+            }
+            return res;
+
+          case wysihtml5.ELEMENT_NODE: //element
+            var innerHTML = node.innerHTML;
+            var innerText = wysihtml5.dom.getTextContent(node);
+            return (!ALLOWED_EMPTY_NODENAMES_REGEX.test(node.nodeName.toLowerCase()))
+              && (innerText.replace(/\s/g,'').length == 0)
+              && (innerHTML !== undefined && !ALLOWED_EMPTY_NODES_REGEX.test(innerHTML));
+
+          case wysihtml5.TEXT_NODE: //#text
+            return node.wholeText.replace(/\s/g,'').length == 0;
+        }
       }
 
       // Simulate html5 autofocus on contentEditable element
@@ -8542,19 +8582,28 @@ wysihtml5.views.View = Base.extend(
         return;
       }
 
+      function doAutoLink(){
+        if (dom.getTextContent(that.element).match(dom.autoLink.URL_REG_EXP)) {
+          that.selection.executeAndRestore(function(startContainer, endContainer) {
+            dom.autoLink(endContainer.parentNode);
+            that.doResize();
+          });
+        }
+      }
+ 
       // Only do the auto linking by ourselves when the browser doesn't support auto linking
       // OR when he supports auto linking but we were able to turn it off (IE9+)
       if (!supportsAutoLinking || (supportsAutoLinking && supportsDisablingOfAutoLinking)) {
-        this.parent.on("newword:composer", function() {
-          if (dom.getTextContent(that.element).match(dom.autoLink.URL_REG_EXP)) {
-            that.selection.executeAndRestore(function(startContainer, endContainer) {
-              dom.autoLink(endContainer.parentNode);
-            });
-          }
-        });
-
-        dom.observe(this.element, "blur", function() {
+        this.parent.on("newword:composer", doAutoLink);
+        this.parent.on("paste:composer", doAutoLink);
+        this.parent.on("enable:composer", doAutoLink);
+        this.parent.on("beforeload", doAutoLink);
+        this.parent.on("load", doAutoLink);
+ 
+ 
+        dom.observe(this.element, ["blur", "focus", "load", "beforeload"], function() {
           dom.autoLink(that.element);
+          that.doResize();
         });
       }
 
@@ -8886,7 +8935,8 @@ wysihtml5.views.View = Base.extend(
       });
     }
   });
-})(wysihtml5);(function(wysihtml5) {
+})(wysihtml5);
+(function(wysihtml5) {
   var dom             = wysihtml5.dom,
       doc             = document,
       win             = window,
@@ -9164,11 +9214,11 @@ wysihtml5.views.View = Base.extend(
     // --------- Returns the text around the caret from lookback to lookahead
     this._getTextAroundCaret = function (charCode, lookback, lookahead) {
       var itxt = dom.getTextContent(that.element).replace(/\n|^\b/g, '');
-      var char = String.fromCharCode(charCode);
+      var chatTxt = String.fromCharCode(charCode);
 
       var caretPos = that._getCaretOffset();
       var str = itxt.substring(caretPos - lookback, caretPos + lookahead);
-      return str.slice(0, lookback) + char + str.slice(lookback, str.length - 1);
+      return str.slice(0, lookback) + chatTxt + str.slice(lookback, str.length - 1);
     }
 
     // --------- Error prevention logic ---------
@@ -9188,32 +9238,51 @@ wysihtml5.views.View = Base.extend(
     }
 
     // --------- Auto-correct logic ---------
-    this._applyFixRules = function (rules, txt, char, event) {
+    this._applyFixRules = function (rules, txt, chatTxt, event) {
       if (rules.length <= 0) {
         return false;
       } else if (rules[0].rule.test(txt)) {
         event.preventDefault();
-        var fixed = rules[0].fix(char);
+        var fixed = rules[0].fix(chatTxt);
         that.commands.exec("insertHTML", fixed);
         that.parent.fire("fix:composer", {
           rule:rules[0],
-          text:char,
-          fixed:rules[0].fix(char)
+          text:chatTxt,
+          fixed:rules[0].fix(chatTxt)
         });
         return;
       } else {
-        return this._applyFixRules(rules.slice(1, rules.length), txt, char, event);
+        return this._applyFixRules(rules.slice(1, rules.length), txt, chatTxt, event);
       }
     }
 
     // --------- Error prevention and auto-correct logic ---------
-    dom.observe(element, "keypress", function (event) {
+    /*dom.observe(element, "keypress", function (event) {
       var str = that._getTextAroundCaret(event.charCode, that.config.caretOffset.left, that.config.caretOffset.right);
 
       if (that._applyDenyRules(that.config.parserRules.deny, str, event) !== true) {
           that._applyFixRules(that.config.parserRules.fix, str, String.fromCharCode(event.charCode), event);
       }
-    });
+    });*/
+
+    /**
+     * Checks if a given node is child of some node of a kind
+     * @param  Element  child           The child node
+     * @param  string  expectedNodeName The parent node name 
+     * @return {Boolean}                 
+     */
+    this._isChildOfA = function(child, expectedNodeName){
+      var parent = child.parentNode;
+      while(parent){
+        if(parent.nodeName == expectedNodeName){
+          return parent;
+        } else {
+          parent = parent.parentNode;
+        }
+      }
+
+      return false;
+    }
 
     dom.observe(element, "keypress", function(event){
       var selNode = that.selection.getSelectedNode(true);
@@ -9238,11 +9307,20 @@ wysihtml5.views.View = Base.extend(
         }
       };
 
+      //resizing on startup
       this.doResize();
+      dom.observe(element, ["imageloaded:composer", "change:composer", "keyup", "keydown", "paste", "change", "focus", "blur"], that.doResize);
+      that.parent.on("disable:composer", that.doResize);
+      that.parent.on("enable:composer", that.doResize);
+      that.parent.on("imageloaded:composer", that.doResize);
+      that.parent.on("beforeload", that.doResize);
+      that.parent.on("load", that.doResize);
+      that.parent.on("aftercommand:composer", that.doResize);
+      that.parent.on("change:composer", that.doResize);
+      that.parent.on("newword:composer", that.doResize);
+      that.parent.on("change", that.doResize);
+      that.parent.on('imageloaded:composer',that.doResize);
 
-      dom.observe(element, ["keyup", "keydown", "paste", "change", "focus", "blur"], function(event){
-        that.doResize();
-      });
     } else {
       this.doResize = function() {}
     }
@@ -9368,6 +9446,28 @@ wysihtml5.views.View = Base.extend(
       }
     });
 
+    // --------- Make sure that when pressing backspace/delete on a blockquote, it is unmade ---------
+    dom.observe(element, "keydown", function(event) {
+      var target  = that.selection.getSelectedNode(true),
+          keyCode = event.keyCode,
+          parent;
+      if (keyCode === wysihtml5.BACKSPACE_KEY //if it's pressed backspace
+        && that.selection.getSelection().anchorOffset == 0) { //and it's trying to delete it
+        parent = that._isChildOfA(target,"BLOCKQUOTE");
+        if(parent) { //and it's inside a blockquote
+          
+          var range = that.selection.getRange();
+          range.setStartBefore(parent);
+          var content = range.cloneContents();
+          if(content.textContent.length <= 0){ //and finally, if it's at the beginning of the blockquote
+            that.parent.toolbar.execCommand("formatBlock","blockquote");
+            event.preventDefault();
+          }
+        }
+      }
+    });
+
+
     // --------- IE 8+9 focus the editor when the iframe is clicked (without actually firing the 'focus' event on the <body>) ---------
     if (browser.hasIframeFocusIssue()) {
       dom.observe(this.iframe, "focus", function() {
@@ -9405,7 +9505,8 @@ wysihtml5.views.View = Base.extend(
       }
     });
   };
-})(wysihtml5);/**
+})(wysihtml5);
+/**
  * Class that takes care that the value of the composer and the textarea is always in sync
  */
 (function(wysihtml5) {
@@ -9521,6 +9622,24 @@ wysihtml5.views.Textarea = wysihtml5.views.View.extend(
     if (parse) {
       value = this.parent.parse(value);
     }
+
+    var iframes = value.match(/<iframe .*?>/g);//replacing iframes for anchors
+
+    if(iframes && iframes.length > 0){
+      for(var i in iframes){
+        var src = iframes[i].match(/src=".*?"/)[0].replace('src','href'),
+        width = iframes[i].match(/width=".*?"/)[0],
+        height = iframes[i].match(/height=".*?"/)[0];
+
+        value = value.replace(iframes[i], "<a data-media=\"embed-video\"" + src + " " + width + " " + height + ">");
+      }
+      value = value.replace(/\/iframe>/g,'/a>');          
+    }
+
+    value = value.replace('&nbsp;',' ')//replacing &nbsp; with white spaces
+        .replace(/<p[^>]*?>(<br\/?>| +)?<\/p>/gi, '')//removing empty paragraphs
+        .replace(/(^<hr[^>]*?>)|(<hr[^>]*?>$)/gi,'');//removing <hr> at the end or begining of the text
+
     return value;
   },
   
@@ -9567,7 +9686,8 @@ wysihtml5.views.Textarea = wysihtml5.views.View.extend(
       });
     });
   }
-});/**
+});
+/**
  * Toolbar Dialog
  *
  * @param {Element} link The toolbar link which causes the dialog to show up
@@ -10355,7 +10475,7 @@ wysihtml5.views.Textarea = wysihtml5.views.View.extend(
           var textnode = that.composer.selection.getSelection().anchorNode;
           that.parse(that.composer.element);
           that.focus(textnode);
-          that.dom.autoLink(textnode.parentNode);
+          
         }, keepScrollPosition);
         
       });
