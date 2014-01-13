@@ -4030,7 +4030,8 @@ wysihtml5.browser = (function() {
 
   //Checks if a given URL is an youtube video URL
   function _isYoutube(str){
-    return /(https?:\/\/)?(youtu\.be\/[a-z0-9_-]+|(www\.)?youtube\.com\/(watch\?v=|embed\/)[0-9a-z_-]+)/i.test(str) ? 'youtube' : false;
+    /*return /(https?:\/\/)?(youtu\.be\/[a-z0-9_-]+|(www\.)?youtube\.com\/(watch\?v=|embed\/)[0-9a-z_-]+)/i.test(str) ? 'youtube' : false;*/
+    return /(?:http|https|)(?::\/\/|)(?:www.|)(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/ytscreeningroom\?v=|\/feeds\/api\/videos\/|\/user\S*[^\w\-\s]|\S*[^\w\-\s]))([\w\-]{11})[a-z0-9;:@?&%=+\/\$_.-]*/.test(str) ? 'youtube' : false;
   }
 
   //Checks if a given URL is a vimeo video URL
@@ -4051,12 +4052,19 @@ wysihtml5.browser = (function() {
   //Returns the video id from a given URL and a give video source (like youtube or vimeo)
   function _getVideoId(str, vidsrc){
     var provs = {
-      'youtube': /[a-zA-Z_0-9_-]+(?=\?t=[a-z0-9_-]+)|(embed\/)?[a-z0-9_-]+$|watch\?v\=[a-z0-9_-]+/mi,
+      'youtube': /(?:http|https|)(?::\/\/|)(?:www.|)(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/ytscreeningroom\?v=|\/feeds\/api\/videos\/|\/user\S*[^\w\-\s]|\S*[^\w\-\s]))([\w\-]{11})[a-z0-9;:@?&%=+\/\$_.-]*/,
       'daily': /video\/[a-z0-9-]+|(?!\/)[a-z0-9]+(?=\?)|(?!\/)[a-z0-9]+([^=0-9])$/mi,
       'vimeo': /[0-9]+(?=\?.+=.+|$)/mi
     }
 
-    return str.match(provs[vidsrc])[0].replace(/(embed\/|video\/|watch\?v\=)/,'');
+
+    if(vidsrc == 'youtube'){
+      var match_index = 1;
+    } else {
+      var match_index = 0;
+    }
+
+    return str.match(provs[vidsrc])[match_index].replace(/(embed\/|video\/|watch\?v\=)/,'');
   }
 
   //Returns the URL for embed video given a video source and the video id
@@ -5927,9 +5935,18 @@ wysihtml5.dom.textParser.processNode = function(node, elementProcessor, textProc
 wysihtml5.dom.textParser.extractText = function(node, preserve){
   var that = this;
   return that.processNode(node, function(cnode){
-    return that.fold([].slice.call(cnode.childNodes, 0), '', function(text, currNode){
+    /*return that.fold([].slice.call(cnode.childNodes, 0), '', function(text, currNode){
       return text + that.extractText(currNode, preserve);
-    });
+    });*/
+
+    var childNodes = [].slice.call(cnode.childNodes, 0);
+    var text = '';
+    for(var i = 0; i < childNodes.length; i++){
+      text += that.extractText(childNodes[i], preserve);
+    }
+
+    return text;
+
   }, function(cnode){
     return that.preserveMarkup(cnode.textContent, preserve) + that.TEXT_PLACEMENT_MARKUP;
   });
@@ -5958,9 +5975,18 @@ wysihtml5.dom.textParser.preserveMarkup = function(text, rule) {
 wysihtml5.dom.textParser.extractPreserved = function(node, preserve) {
   var that = this;
   return that.processNode(node, function(cnode){
-    return that.fold([].slice.call(cnode.childNodes, 0), [], function(preserve_set, currNode){
+    /*return that.fold([].slice.call(cnode.childNodes, 0), [], function(preserve_set, currNode){
       return preserve_set.concat(that.extractPreserved(currNode, preserve));
-    });
+    });*/
+
+    var preserve_set = [];
+    var childNodes = [].slice.call(cnode.childNodes, 0);
+    for(var i = 0; i < childNodes.length; i++){
+      preserve_set = preserve_set.concat(that.extractPreserved(childNodes[i], preserve));
+    }
+
+    return preserve_set;
+
   }, function(cnode){
     return preserve !== undefined && preserve.test(cnode.textContent) ? cnode.textContent.match(preserve) : [];
   });
@@ -5997,9 +6023,18 @@ wysihtml5.dom.textParser.getNodeMarkupGuts = function(node){
 
   return !node.firstChild ? '<' + node.nodeName.toLowerCase() + attr + '>'
     : '<' + node.nodeName.toLowerCase() + attr + '>' + (function(){
-      return that.fold([].slice.call(node.childNodes, 0), '', function(text, currNode){
+      /*return that.fold([].slice.call(node.childNodes, 0), '', function(text, currNode){
         return text + that.extractNodeMarkup(currNode);
-      });
+      });*/
+
+      var childNodes = [].slice.call(node.childNodes, 0);
+      var text = '';
+      for(var i = 0; i< childNodes.length; i++){
+        text += that.extractNodeMarkup(childNodes[i])
+      }
+
+      return text;
+
     })() + '</' + node.nodeName.toLowerCase() + '>';
 }
 
@@ -6013,9 +6048,15 @@ wysihtml5.dom.textParser.getNodeMarkupGuts = function(node){
  */
 wysihtml5.dom.textParser.replacePreserved = function(preserved_set, text){
   var that = this;
-  return that.fold(preserved_set, text, function(txt, preserved_item){
+  /*return that.fold(preserved_set, text, function(txt, preserved_item){
     return txt.replace(that.PRESERVE_MARKUP, preserved_item);
-  });
+  });*/
+
+  for(var i = 0; i < preserved_set.length; i++){
+    text=text.replace(that.PRESERVE_MARKUP, preserved_set[i]);
+  }
+
+  return text;
 }
 
 /**
@@ -6027,8 +6068,14 @@ wysihtml5.dom.textParser.replacePreserved = function(preserved_set, text){
  */
 wysihtml5.dom.textParser.applyRules = function(text, rules){
   var that = this;
-  return (rules && rules.length > 0) ?
-    that.applyRules(text.replace(rules[0].rule, rules[0].replace), rules.slice(1, rules.length)) : text;
+  /*return (rules && rules.length > 0) ?
+    that.applyRules(text.replace(rules[0].rule, rules[0].replace), rules.slice(1, rules.length)) : text;*/
+
+  for(var i=0; i < rules.length; i++){
+    text = text.replace(rules[i].rule, rules[i].replace);
+  }
+
+  return text;
 };
 
 
@@ -6046,14 +6093,23 @@ wysihtml5.dom.textParser.parse = function(node, rules, preserve){
     /** It's not elegant, I know =(. But it's easier to make it without having to iterate over the node three times. */
     var templateText = '';
     var preserved_set = [];
-    var wholeText = that.fold([].slice.call(node.childNodes, 0), '', function(accum, currNode){//Removing the root node from the response
+    /*var wholeText = that.fold([].slice.call(node.childNodes, 0), '', function(accum, currNode){//Removing the root node from the response
       templateText += that.extractNodeMarkup(currNode);
       preserved_set = preserved_set.concat(that.extractPreserved(currNode, preserve));
       return accum + that.extractText(currNode, preserve);
-    });
+    });*/
+
+    var wholeText = '';
+    var childNodes = [].slice.call(node.childNodes, 0);
+    for(var i = 0; i < childNodes.length; i++){
+      templateText += that.extractNodeMarkup(childNodes[i]);
+      preserved_set = preserved_set.concat(that.extractPreserved(childNodes[i], preserve));
+      wholeText += that.extractText(childNodes[i], preserve);;
+    }
+
 
     //Replacing the text back in its original position
-    var text = (function foldTokens(tokenSet, template){
+    /*var text = (function foldTokens(tokenSet, template){
       return (tokenSet && tokenSet.length > 0) ?
         foldTokens(tokenSet.slice(1, tokenSet.length), template.replace(that.TEXT_PLACEMENT_MARKUP, tokenSet[0])) : template;
 
@@ -6064,10 +6120,19 @@ wysihtml5.dom.textParser.parse = function(node, rules, preserve){
         ).split(that.TEXT_PLACEMENT_MARKUP), //Splitting the resulting string
 
         templateText
-      );
+      );*/  
+
+    var tokenSet = that.applyRules(//Applying the rules to the text
+          wholeText.replace(that.TEXT_PLACEMENT_MARKUP_REGEX,''), 
+          rules
+        ).split(that.TEXT_PLACEMENT_MARKUP);
+
+    for(var j = 0; j < tokenSet.length; j++){
+      templateText = templateText.replace(that.TEXT_PLACEMENT_MARKUP, tokenSet[j]);
+    }
 
     //restoring preserved text
-    return wysihtml5.dom.textParser.replacePreserved(preserved_set, text);
+    return wysihtml5.dom.textParser.replacePreserved(preserved_set, templateText);
 };
 /**
  * Fix most common html formatting misbehaviors of browsers implementation when inserting
@@ -7510,7 +7575,11 @@ wysihtml5.commands.bold = {
         } else if(nodeName == "BLOCKQUOTE") { //Special condition for dealing with blockquotes to not allow chained quoting
             var selection = composer.selection.getSelection();
 
-            var range = selection.getRangeAt(0);
+            try {
+              var range = selection.getRangeAt(0);
+            } catch(e){
+              return;
+            }
             range.setStartBefore(range.startContainer.parentNode);
             range.setEndAfter(range.endContainer.parentNode);
 

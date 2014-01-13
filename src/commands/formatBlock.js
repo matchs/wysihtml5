@@ -211,7 +211,11 @@
         } else if(nodeName == "BLOCKQUOTE") { //Special condition for dealing with blockquotes to not allow chained quoting
             var selection = composer.selection.getSelection();
 
-            var range = selection.getRangeAt(0);
+            try {
+              var range = selection.getRangeAt(0);
+            } catch(e){
+              return;
+            }
             range.setStartBefore(range.startContainer.parentNode);
             range.setEndAfter(range.endContainer.parentNode);
 
