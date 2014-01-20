@@ -18,7 +18,7 @@ wysihtml5.views.Textarea = wysihtml5.views.View.extend(
       value = this.parent.parse(value);
     }
 
-    var iframes = value.match(/<iframe .*?>/g);//replacing iframes for anchors
+    var iframes = value.match(/<iframe .*?>.*?(?=<\/iframe *>)/g);//replacing iframes for anchors
 
     if(iframes && iframes.length > 0){
       for(var i in iframes){
@@ -26,7 +26,7 @@ wysihtml5.views.Textarea = wysihtml5.views.View.extend(
         width = iframes[i].match(/width=".*?"/)[0],
         height = iframes[i].match(/height=".*?"/)[0];
 
-        value = value.replace(iframes[i], "<a data-media=\"embed-video\"" + src + " " + width + " " + height + ">");
+        value = value.replace(iframes[i], "<a data-media=\"embed-video\"" + src + " " + width + " " + height + ">" + src.replace(/href\=\"|\"$/g,''));
       }
       value = value.replace(/\/iframe>/g,'/a>');          
     }

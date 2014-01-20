@@ -171,10 +171,13 @@
             _removeClass(blockElement, classRegExp);
           }
           var hasClasses = _hasClasses(blockElement);
-          if (!hasClasses && (useLineBreaks || nodeName === "P")) {
+          if (!hasClasses && (useLineBreaks || nodeName === "P" || nodeName === "BLOCKQUOTE")) {
             // Insert a line break afterwards and beforewards when there are siblings
             // that are not of type line break or block element
-            _addLineBreakBeforeAndAfter(blockElement);
+            if(nodeName !== "BLOCKQUOTE"){
+               _addLineBreakBeforeAndAfter(blockElement);
+            }
+
             dom.replaceWithChildNodes(blockElement);
           } else {
             // Make sure that styling is kept by renaming the element to a <div> or <p> and copying over the class name
@@ -211,20 +214,35 @@
         } else if(nodeName == "BLOCKQUOTE") { //Special condition for dealing with blockquotes to not allow chained quoting
             var selection = composer.selection.getSelection();
 
+            if(!selection || selection.rangeCount <= 0){
+              return;
+            }            
+
             try {
               var range = selection.getRangeAt(0);
             } catch(e){
               return;
             }
-            range.setStartBefore(range.startContainer.parentNode);
-            range.setEndAfter(range.endContainer.parentNode);
 
+            if(range.startContainer.nodeName == "BODY" || range.endContainer.nodeName == "BODY"){
+                return;
+            }
+              
+            if(selectedNode.nodeType == selectedNode.TEXT_NODE && selectedNode.parentNode && selectedNode.parentNode.nodeName === "BODY"){
+              //special case for text node directly inserted inside body
+              range.setStartBefore(selectedNode);
+              range.setEndAfter(selectedNode);
+            } else {
+
+              var start = range.startContainer.parentNode && range.startContainer.parentNode.nodeName !== "BODY" ? range.startContainer.parentNode : range.startContainer,
+              end = range.endContainer.parentNode && range.endContainer.parentNode.nodeName !== "BODY" ? range.endContainer.parentNode : range.endContainer;
+
+              range.setStartBefore(start);
+              range.setEndAfter(end);
+            }
+          
             var selectionDom = dom.getAsDom(range.toHtml());
-
-            if(!selection || selection.rangeCount <= 0){
-              return;
-            }            
-
+            
             (function remExtraQuotes(elems){//Removes pre-existent blockquotes and replaces them by its contents
               if(elems && elems.length > 0){
                 dom.replaceWithChildNodes(elems[0]); //Once destroyed the node ceases to exist inside the array
