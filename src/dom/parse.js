@@ -129,8 +129,17 @@ wysihtml5.dom.parse = (function() {
     // Insert new DOM tree
     element.appendChild(fragment);
 
-    if(typeof rules === "object" && rules.parser){
-      element.innerHTML = wysihtml5.dom.textParser.parse(element, rules.parser, rules.preserve);
+
+    if(typeof rules === "object" ){
+      //CSS Selectors parser
+      if(rules.selectors) {
+        element.innerHTML = wysihtml5.dom.selectorParser.parse(element, rules.selectors);
+      }
+
+      //Text parser
+      if(rules.parser){
+        element.innerHTML = wysihtml5.dom.textParser.parse(element, rules.parser, rules.preserve);
+      }
     }
     
     return isString ? wysihtml5.quirks.getCorrectInnerHTML(element) : element;

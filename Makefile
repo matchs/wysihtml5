@@ -39,6 +39,7 @@ JS_FILES = src/wysihtml5.js \
   src/dom/text_content.js \
   src/dom/replace_and_become_child.js \
   src/dom/textParser2.js \
+  src/dom/selectorParser.js \
   src/quirks/clean_pasted_html.js \
   src/quirks/ensure_proper_clearing.js \
   src/quirks/get_correct_inner_html.js \
