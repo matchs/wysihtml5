@@ -2,7 +2,8 @@
  * Text Parser
  * Parses the text in a given node based on a given set of rules
  *
- *
+ * @deprecated Works but it's already unused. Too slow.
+ * 
  * @author Mateus Chagas (contato@mateuschagas.com.br) (http://github.com/matchs)
  */
 wysihtml5.dom.textParser = {};
