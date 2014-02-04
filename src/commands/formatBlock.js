@@ -232,6 +232,18 @@
               //special case for text node directly inserted inside body
               range.setStartBefore(selectedNode);
               range.setEndAfter(selectedNode);
+            } else if(selectedNode.nodeName == 'UL' || selectedNode.nodeName == 'OL'){
+              //@todo join this case and the previous... this code sucks!
+              range.setStartBefore(selectedNode);
+              range.setEndAfter(selectedNode);
+            } else if(selectedNode.nodeName == 'LI') {
+
+              range.setStartBefore(selectedNode.parentNode);
+              range.setEndAfter(selectedNode.parentNode);
+            } else if(selectedNode.parentNode.nodeName == 'LI'){
+              
+              range.setStartBefore(selectedNode.parentNode.parentNode);
+              range.setEndAfter(selectedNode.parentNode.parentNode);
             } else {
 
               var start = range.startContainer.parentNode && range.startContainer.parentNode.nodeName !== "BODY" ? range.startContainer.parentNode : range.startContainer,
