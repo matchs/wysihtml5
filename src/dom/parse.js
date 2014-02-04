@@ -53,6 +53,7 @@ wysihtml5.dom.parse = (function() {
 
   var ALLOWED_EMPTY_NODES_REGEX = new RegExp("\<img|\<iframe|\<video|\<hr|\<canvas",'i');
   var ALLOWED_EMPTY_NODENAMES_REGEX = new RegExp("img|iframe|video|hr|canvas|br");
+  var INLINE_TEXT_NODENAMES = ['A','B','I', 'U', 'SPAN', '#text']
 
   parent = this.parent;
 
@@ -93,7 +94,35 @@ wysihtml5.dom.parse = (function() {
       WHITE_SPACE_REG_EXP = /\s+/,
       defaultRules        = { tags: {}, classes: {}, fix:[], deny:[], parser:[] },
       currentRules        = {};
-  
+
+  /**
+   * [_prepend description]
+   * @param  {[type]} container [description]
+   * @param  {[type]} element   [description]
+   * @return {[type]}           [description]
+   */
+  function _prepend(container, element){
+    container.insertBefore(element, container.firstChild);
+  }
+
+  /**
+   * [_buildNode description]
+   * @param  {[type]} node     [description]
+   * @param  {[type]} nodeName [description]
+   * @return {[type]}          [description]
+   */
+  function _buildNode(node, nodeName){
+      var p = node.ownerDocument.createElement(nodeName);
+      node.parentNode.insertBefore(p, node);
+      
+      while(node.nextSibling && INLINE_TEXT_NODENAMES.indexOf(node.nextSibling.nodeName) >= 0){
+          p.appendChild(node.nextSibling)
+      }
+      
+      _prepend(p, node);
+      return p;
+  }
+
   /**
    * Iterates over all childs of the element, recreates them, appends them into a document fragment
    * which later replaces the entire body content
@@ -114,8 +143,23 @@ wysihtml5.dom.parse = (function() {
       element = elementOrHtml;
     }
 
+
+    if(typeof rules === "object" && rules.root_text_nodes) {
+      var _handleRootTextNodes = function(firstChild){
+        if(INLINE_TEXT_NODENAMES.indexOf(firstChild.nodeName) >= 0){
+          return _buildNode(firstChild, rules.root_text_nodes);
+        } else {
+          return firstChild;
+        }
+      }
+    } else {
+      var _handleRootTextNodes = function(firstChild){
+        return firstChild;
+      }
+    }
+
     while (element.firstChild) {
-      firstChild = element.firstChild;
+      firstChild = _handleRootTextNodes(element.firstChild);
       newNode = _convert(firstChild, cleanUp);
       element.removeChild(firstChild);
       if (newNode && !_nodeIsEmpty(newNode)) {
@@ -159,6 +203,16 @@ wysihtml5.dom.parse = (function() {
     
     if (!newNode) {
       return null;
+    }
+
+    if(newNode.nodeName == "BLOCKQUOTE"){
+      for(i=0; i<oldChildsLength; i++){
+        if(INLINE_TEXT_NODENAMES.indexOf(oldChilds[i].nodeName) >= 0){
+          _buildNode(oldChilds[i], currentRules.root_text_nodes);
+          oldChilds = oldNode.childNodes;
+          oldChildsLength = oldChilds.length;
+        }
+      }
     }
     
     for (i=0; i<oldChildsLength; i++) {

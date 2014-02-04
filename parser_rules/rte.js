@@ -421,6 +421,27 @@ var wysihtml5ParserRules = {
     }
   },
 
+  /**
+   * HTML Sanitizer rules using CSS selectors. 
+   * For now only the 'rename_tag' and 'remove' actions are supproted
+   */
+  "selectors" :{
+      "body>div, blockquote>div":{
+        "rename_tag":'p'
+      },
+      "p>p":{
+        "rename_tag":'p'
+      },
+      "div>div":{
+        "rename_tag":'p'
+      }
+  },
+
+  /**
+   * What to to with root text nodes. body > #text or blockquote > #text
+   * Ommit in case of doing nothing
+   */
+  'root_text_nodes':'p',
 
   /**
    * Preserve rules. Matching texts to this rule won't be affected by the text parser.
