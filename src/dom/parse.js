@@ -144,7 +144,7 @@ wysihtml5.dom.parse = (function() {
     }
 
 
-    if(typeof rules === "object" && rules.root_text_nodes) {
+    if(typeof rules === "object" && rules.root_text_nodes && (element.nodeName == "BODY" || element.nodeName == "BLOCKQUOTE" || !element.parentNode)) {
       var _handleRootTextNodes = function(firstChild){
         if(INLINE_TEXT_NODENAMES.indexOf(firstChild.nodeName) >= 0){
           return _buildNode(firstChild, rules.root_text_nodes);

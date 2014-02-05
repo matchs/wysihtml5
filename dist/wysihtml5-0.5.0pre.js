@@ -4865,6 +4865,7 @@ wysihtml5.dom.parse = (function() {
 
   var ALLOWED_EMPTY_NODES_REGEX = new RegExp("\<img|\<iframe|\<video|\<hr|\<canvas",'i');
   var ALLOWED_EMPTY_NODENAMES_REGEX = new RegExp("img|iframe|video|hr|canvas|br");
+  var INLINE_TEXT_NODENAMES = ['A','B','I', 'U', 'SPAN', '#text']
 
   parent = this.parent;
 
@@ -4905,7 +4906,35 @@ wysihtml5.dom.parse = (function() {
       WHITE_SPACE_REG_EXP = /\s+/,
       defaultRules        = { tags: {}, classes: {}, fix:[], deny:[], parser:[] },
       currentRules        = {};
-  
+
+  /**
+   * [_prepend description]
+   * @param  {[type]} container [description]
+   * @param  {[type]} element   [description]
+   * @return {[type]}           [description]
+   */
+  function _prepend(container, element){
+    container.insertBefore(element, container.firstChild);
+  }
+
+  /**
+   * [_buildNode description]
+   * @param  {[type]} node     [description]
+   * @param  {[type]} nodeName [description]
+   * @return {[type]}          [description]
+   */
+  function _buildNode(node, nodeName){
+      var p = node.ownerDocument.createElement(nodeName);
+      node.parentNode.insertBefore(p, node);
+      
+      while(node.nextSibling && INLINE_TEXT_NODENAMES.indexOf(node.nextSibling.nodeName) >= 0){
+          p.appendChild(node.nextSibling)
+      }
+      
+      _prepend(p, node);
+      return p;
+  }
+
   /**
    * Iterates over all childs of the element, recreates them, appends them into a document fragment
    * which later replaces the entire body content
@@ -4926,8 +4955,23 @@ wysihtml5.dom.parse = (function() {
       element = elementOrHtml;
     }
 
+
+    if(typeof rules === "object" && rules.root_text_nodes && (element.nodeName == "BODY" || element.nodeName == "BLOCKQUOTE" || !element.parentNode)) {
+      var _handleRootTextNodes = function(firstChild){
+        if(INLINE_TEXT_NODENAMES.indexOf(firstChild.nodeName) >= 0){
+          return _buildNode(firstChild, rules.root_text_nodes);
+        } else {
+          return firstChild;
+        }
+      }
+    } else {
+      var _handleRootTextNodes = function(firstChild){
+        return firstChild;
+      }
+    }
+
     while (element.firstChild) {
-      firstChild = element.firstChild;
+      firstChild = _handleRootTextNodes(element.firstChild);
       newNode = _convert(firstChild, cleanUp);
       element.removeChild(firstChild);
       if (newNode && !_nodeIsEmpty(newNode)) {
@@ -4941,8 +4985,17 @@ wysihtml5.dom.parse = (function() {
     // Insert new DOM tree
     element.appendChild(fragment);
 
-    if(typeof rules === "object" && rules.parser){
-      element.innerHTML = wysihtml5.dom.textParser.parse(element, rules.parser, rules.preserve);
+
+    if(typeof rules === "object" ){
+      //CSS Selectors parser
+      if(rules.selectors) {
+        element.innerHTML = wysihtml5.dom.selectorParser.parse(element, rules.selectors);
+      }
+
+      //Text parser
+      if(rules.parser){
+        element.innerHTML = wysihtml5.dom.textParser.parse(element, rules.parser, rules.preserve);
+      }
     }
     
     return isString ? wysihtml5.quirks.getCorrectInnerHTML(element) : element;
@@ -4962,6 +5015,16 @@ wysihtml5.dom.parse = (function() {
     
     if (!newNode) {
       return null;
+    }
+
+    if(newNode.nodeName == "BLOCKQUOTE"){
+      for(i=0; i<oldChildsLength; i++){
+        if(INLINE_TEXT_NODENAMES.indexOf(oldChilds[i].nodeName) >= 0){
+          _buildNode(oldChilds[i], currentRules.root_text_nodes);
+          oldChilds = oldNode.childNodes;
+          oldChildsLength = oldChilds.length;
+        }
+      }
     }
     
     for (i=0; i<oldChildsLength; i++) {
@@ -6134,6 +6197,71 @@ wysihtml5.dom.textParser.parse = function(node, rules, preserve){
     //restoring preserved text
     return wysihtml5.dom.textParser.replacePreserved(preserved_set, templateText);
 };
+/**
+ * [description]
+ * @return {[type]} [description]
+ */
+wysihtml5.dom.selectorParser = {}
+wysihtml5.dom.selectorParser.parse = (function(){
+ 	var self = wysihtml5.dom.selectorParser;
+	/**
+	 * [_actions description]
+	 * @type {Object}
+	 */
+	self._actions = {}
+	self._actions.rename_tag = function(oldElement, tag) {
+		return wysihtml5.dom.renameElement(oldElement, tag);
+	}
+
+	/**
+	 * [remove description]
+	 * @param  {[type]} oldElemnt [description]
+	 * @param  {[type]} param     [description]
+	 * @return {[type]}           [description]
+	 */
+	self._actions.remove = function(oldElemnt, param) {
+		if(oldElement.parentNode)
+			oldElement.parentNode.removeChild(oldElement);
+	}
+
+
+	/**
+	 * [_convertToFragment description]
+	 * @param  {[type]} element [description]
+	 * @return {[type]}         [description]
+	 */
+	self._convertToFragment = function(element) {
+		var frag = element.ownerDocument.createDocumentFragment()
+		frag.appendChild(element.cloneNode(true));
+		return frag;
+	}
+
+
+	/**
+	 * [parse description]
+	 * @param  {[type]} element [description]
+	 * @param  {[type]} rules   [description]
+	 * @return {[type]}         [description]
+	 */
+	function parse(element, rules){
+		var frag = self._convertToFragment(element);
+
+		for(var rule in rules){
+			var selectors = frag.querySelectorAll(rule);
+			for(var i = selectors.length - 1; i >= 0; i--){
+		        var currElement = selectors[i];		
+		        for(var action in rules[rule]){
+		        	self._actions[action](currElement, rules[rule][action]);
+		    	}
+		    }
+		}
+		return frag.firstChild.innerHTML;
+	}
+
+	return parse;
+})();
+
+
 /**
  * Fix most common html formatting misbehaviors of browsers implementation when inserting
  * content via copy & paste contentEditable
@@ -7596,6 +7724,18 @@ wysihtml5.commands.bold = {
               //special case for text node directly inserted inside body
               range.setStartBefore(selectedNode);
               range.setEndAfter(selectedNode);
+            } else if(selectedNode.nodeName == 'UL' || selectedNode.nodeName == 'OL'){
+              //@todo join this case and the previous... this code sucks!
+              range.setStartBefore(selectedNode);
+              range.setEndAfter(selectedNode);
+            } else if(selectedNode.nodeName == 'LI') {
+
+              range.setStartBefore(selectedNode.parentNode);
+              range.setEndAfter(selectedNode.parentNode);
+            } else if(selectedNode.parentNode.nodeName == 'LI'){
+              
+              range.setStartBefore(selectedNode.parentNode.parentNode);
+              range.setEndAfter(selectedNode.parentNode.parentNode);
             } else {
 
               var start = range.startContainer.parentNode && range.startContainer.parentNode.nodeName !== "BODY" ? range.startContainer.parentNode : range.startContainer,
@@ -9459,6 +9599,8 @@ wysihtml5.views.View = Base.extend(
       if (keyCode === wysihtml5.SPACE_KEY || keyCode === wysihtml5.ENTER_KEY) {
         that.parent.fire("newword:composer");
       }
+
+      that.parent.fire('change:composer');
     });
 
     this.parent.on("paste:composer", function() {
