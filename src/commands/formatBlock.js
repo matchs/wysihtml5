@@ -241,15 +241,17 @@
             }
              
             var targetNode;
-
+            //This is a very, very very ugly thing. I'm sorry I've done it that way, but I had a schedule to accomplish
             if(selectedNode.nodeType == selectedNode.TEXT_NODE && selectedNode.parentNode && selectedNode.parentNode.nodeName === "BODY"){
                 range.setStartBefore(selectedNode);
                 range.setEndAfter(selectedNode);
             } else if((targetNode = _firstParentOfKind(selectedNode, 'LI')) !== false) {
               range.setStartBefore(targetNode.parentNode);
               range.setEndAfter(targetNode.parentNode);
+            } else if(selectedNode.nodeName == 'UL' || selectedNode.nodeName == 'OL'){
+                range.setStartBefore(selectedNode);
+                range.setEndAfter(selectedNode);
             } else {
-
               var start = range.startContainer.parentNode && range.startContainer.parentNode.nodeName !== "BODY" ? range.startContainer.parentNode : range.startContainer,
               end = range.endContainer.parentNode && range.endContainer.parentNode.nodeName !== "BODY" ? range.endContainer.parentNode : range.endContainer;
 

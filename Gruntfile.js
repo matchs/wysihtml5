@@ -18,6 +18,9 @@ module.exports = function(grunt) {
     shell: {
       make: {
 	command:'make bundle'
+      },
+      notify: {
+	command:'notify-send \'Finished building the project!\''
       }
     },
     min : {
@@ -36,12 +39,12 @@ module.exports = function(grunt) {
   
   grunt.registerTask('test', ['qunit']);
   grunt.registerTask('uglify', ['uglify']);
-  grunt.registerTask('bundle', ['shell']);
+  grunt.registerTask('bundle', ['shell:make']);
   grunt.registerTask('minify', ['min']);
-  grunt.registerTask('make', ['shell','min']);
+  grunt.registerTask('make', ['shell:make','min']);
 
   // Default task(s).
-  grunt.registerTask('default', ['test', 'make']);
+  grunt.registerTask('default', ['test', 'make', 'shell:notify']);
 
 
 };
