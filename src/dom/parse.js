@@ -53,7 +53,9 @@ wysihtml5.dom.parse = (function() {
 
   var ALLOWED_EMPTY_NODES_REGEX = new RegExp("\<img|\<iframe|\<video|\<hr|\<canvas",'i');
   var ALLOWED_EMPTY_NODENAMES_REGEX = new RegExp("img|iframe|video|hr|canvas|br");
-  var INLINE_TEXT_NODENAMES = ['A','B','I', 'U', 'SPAN', '#text']
+  //This is really not a good technique.
+  //@todo change this to a white-list instead of a black-list
+  var INLINE_TEXT_NODENAMES = ['A','B','I', 'U', 'SPAN', '#text', 'IMG', 'EM', 'STRONG'];
 
   parent = this.parent;
 

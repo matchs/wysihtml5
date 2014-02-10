@@ -155,6 +155,18 @@
     return p;
   }
 
+  function _firstParentOfKind(node, parentName) {
+      var parentNode;
+      while(node && (parentNode = node.parentNode) && parentNode){
+        if(parentNode.nodeName == parentName){
+          return parentNode;
+        }
+        node = parentNode;
+      }
+
+      return false;
+  }
+
   wysihtml5.commands.formatBlock = {
     exec: function(composer, command, nodeName, className, classRegExp) {
       var doc             = composer.doc,
@@ -227,23 +239,15 @@
             if(range.startContainer.nodeName == "BODY" || range.endContainer.nodeName == "BODY"){
                 return;
             }
-              
-            if(selectedNode.nodeType == selectedNode.TEXT_NODE && selectedNode.parentNode && selectedNode.parentNode.nodeName === "BODY"){
-              //special case for text node directly inserted inside body
-              range.setStartBefore(selectedNode);
-              range.setEndAfter(selectedNode);
-            } else if(selectedNode.nodeName == 'UL' || selectedNode.nodeName == 'OL'){
-              //@todo join this case and the previous... this code sucks!
-              range.setStartBefore(selectedNode);
-              range.setEndAfter(selectedNode);
-            } else if(selectedNode.nodeName == 'LI') {
+             
+            var targetNode;
 
-              range.setStartBefore(selectedNode.parentNode);
-              range.setEndAfter(selectedNode.parentNode);
-            } else if(selectedNode.parentNode.nodeName == 'LI'){
-              
-              range.setStartBefore(selectedNode.parentNode.parentNode);
-              range.setEndAfter(selectedNode.parentNode.parentNode);
+            if(selectedNode.nodeType == selectedNode.TEXT_NODE && selectedNode.parentNode && selectedNode.parentNode.nodeName === "BODY"){
+                range.setStartBefore(selectedNode);
+                range.setEndAfter(selectedNode);
+            } else if((targetNode = _firstParentOfKind(selectedNode, 'LI')) !== false) {
+              range.setStartBefore(targetNode.parentNode);
+              range.setEndAfter(targetNode.parentNode);
             } else {
 
               var start = range.startContainer.parentNode && range.startContainer.parentNode.nodeName !== "BODY" ? range.startContainer.parentNode : range.startContainer,
