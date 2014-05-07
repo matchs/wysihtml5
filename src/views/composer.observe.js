@@ -142,10 +142,15 @@
 
     dom.observe(element, "keypress", function(event){
       var selNode = that.selection.getSelectedNode(true);
+      var keyCode = event.keyCode;
       if(selNode && selNode.nodeName === "BODY"){
         if(that.selection.getText() === ""){
           event.preventDefault();
         }
+      } else if(selNode && selNode.nodeName === "P" 
+          && (keyCode !== wysihtml5.BACKSPACE_KEY && keyCode !== wysihtml5.DELETE_KEY && keyCode !== wysihtml5.ENTER_KEY)
+          && selNode.firstChild && selNode.firstChild.nodeName === "IMG") {
+        event.preventDefault();
       }
     });
 
@@ -290,6 +295,7 @@
       var target  = that.selection.getSelectedNode(true),
           keyCode = event.keyCode,
           parent;
+
       if (target && target.nodeName === "IMG" && (keyCode === wysihtml5.BACKSPACE_KEY || keyCode === wysihtml5.DELETE_KEY)) { // 8 => backspace, 46 => delete
         parent = target.parentNode;
         // delete the <img>
