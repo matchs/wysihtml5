@@ -9655,9 +9655,14 @@ wysihtml5.views.View = Base.extend(
 
         setTimeout(function() { wysihtml5.quirks.redraw(element); }, 0);
         event.preventDefault();
-      } else if((keyCode == wysihtml5.BACKSPACE_KEY && is_image_node(target) && that.selection.getSelection().anchorOffset == 0) 
-          || (keyCode == wysihtml5.DELETE_KEY && is_image_node(target) && that.selection.getSelection().anchorOffset != 0)) {
-        event.preventDefault();
+      } else {
+        target = target.nodeName == "P" ? target : that._isChildOfA(target, "P");
+        if((keyCode == wysihtml5.BACKSPACE_KEY && is_image_node(target) && that.selection.getSelection().anchorOffset == 0) 
+          || (keyCode == wysihtml5.DELETE_KEY && is_image_node(target) && that.selection.getSelection().anchorOffset != 0) 
+          || (keyCode == wysihtml5.BACKSPACE_KEY && target.previousSibling &&  is_image_node(target.previousSibling) && that.selection.getSelection().anchorOffset == 0)) {
+          
+          event.preventDefault();
+        }
       }
     });
 
