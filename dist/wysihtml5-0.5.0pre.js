@@ -4865,7 +4865,9 @@ wysihtml5.dom.parse = (function() {
 
   var ALLOWED_EMPTY_NODES_REGEX = new RegExp("\<img|\<iframe|\<video|\<hr|\<canvas",'i');
   var ALLOWED_EMPTY_NODENAMES_REGEX = new RegExp("img|iframe|video|hr|canvas|br");
-  var INLINE_TEXT_NODENAMES = ['A','B','I', 'U', 'SPAN', '#text']
+  //This is really not a good technique.
+  //@todo change this to a white-list instead of a black-list
+  var INLINE_TEXT_NODENAMES = ['A','B','I', 'U', 'SPAN', '#text', 'IMG', 'EM', 'STRONG'];
 
   parent = this.parent;
 
@@ -5998,9 +6000,6 @@ wysihtml5.dom.textParser.processNode = function(node, elementProcessor, textProc
 wysihtml5.dom.textParser.extractText = function(node, preserve){
   var that = this;
   return that.processNode(node, function(cnode){
-    /*return that.fold([].slice.call(cnode.childNodes, 0), '', function(text, currNode){
-      return text + that.extractText(currNode, preserve);
-    });*/
 
     var childNodes = [].slice.call(cnode.childNodes, 0);
     var text = '';
@@ -6038,9 +6037,6 @@ wysihtml5.dom.textParser.preserveMarkup = function(text, rule) {
 wysihtml5.dom.textParser.extractPreserved = function(node, preserve) {
   var that = this;
   return that.processNode(node, function(cnode){
-    /*return that.fold([].slice.call(cnode.childNodes, 0), [], function(preserve_set, currNode){
-      return preserve_set.concat(that.extractPreserved(currNode, preserve));
-    });*/
 
     var preserve_set = [];
     var childNodes = [].slice.call(cnode.childNodes, 0);
@@ -6086,9 +6082,6 @@ wysihtml5.dom.textParser.getNodeMarkupGuts = function(node){
 
   return !node.firstChild ? '<' + node.nodeName.toLowerCase() + attr + '>'
     : '<' + node.nodeName.toLowerCase() + attr + '>' + (function(){
-      /*return that.fold([].slice.call(node.childNodes, 0), '', function(text, currNode){
-        return text + that.extractNodeMarkup(currNode);
-      });*/
 
       var childNodes = [].slice.call(node.childNodes, 0);
       var text = '';
@@ -6111,9 +6104,6 @@ wysihtml5.dom.textParser.getNodeMarkupGuts = function(node){
  */
 wysihtml5.dom.textParser.replacePreserved = function(preserved_set, text){
   var that = this;
-  /*return that.fold(preserved_set, text, function(txt, preserved_item){
-    return txt.replace(that.PRESERVE_MARKUP, preserved_item);
-  });*/
 
   for(var i = 0; i < preserved_set.length; i++){
     text=text.replace(that.PRESERVE_MARKUP, preserved_set[i]);
@@ -6131,8 +6121,6 @@ wysihtml5.dom.textParser.replacePreserved = function(preserved_set, text){
  */
 wysihtml5.dom.textParser.applyRules = function(text, rules){
   var that = this;
-  /*return (rules && rules.length > 0) ?
-    that.applyRules(text.replace(rules[0].rule, rules[0].replace), rules.slice(1, rules.length)) : text;*/
 
   for(var i=0; i < rules.length; i++){
     text = text.replace(rules[i].rule, rules[i].replace);
@@ -6156,11 +6144,6 @@ wysihtml5.dom.textParser.parse = function(node, rules, preserve){
     /** It's not elegant, I know =(. But it's easier to make it without having to iterate over the node three times. */
     var templateText = '';
     var preserved_set = [];
-    /*var wholeText = that.fold([].slice.call(node.childNodes, 0), '', function(accum, currNode){//Removing the root node from the response
-      templateText += that.extractNodeMarkup(currNode);
-      preserved_set = preserved_set.concat(that.extractPreserved(currNode, preserve));
-      return accum + that.extractText(currNode, preserve);
-    });*/
 
     var wholeText = '';
     var childNodes = [].slice.call(node.childNodes, 0);
@@ -6169,21 +6152,6 @@ wysihtml5.dom.textParser.parse = function(node, rules, preserve){
       preserved_set = preserved_set.concat(that.extractPreserved(childNodes[i], preserve));
       wholeText += that.extractText(childNodes[i], preserve);;
     }
-
-
-    //Replacing the text back in its original position
-    /*var text = (function foldTokens(tokenSet, template){
-      return (tokenSet && tokenSet.length > 0) ?
-        foldTokens(tokenSet.slice(1, tokenSet.length), template.replace(that.TEXT_PLACEMENT_MARKUP, tokenSet[0])) : template;
-
-    })(
-        that.applyRules(//Applying the rules to the text
-          wholeText.replace(that.TEXT_PLACEMENT_MARKUP_REGEX,''), 
-          rules
-        ).split(that.TEXT_PLACEMENT_MARKUP), //Splitting the resulting string
-
-        templateText
-      );*/  
 
     var tokenSet = that.applyRules(//Applying the rules to the text
           wholeText.replace(that.TEXT_PLACEMENT_MARKUP_REGEX,''), 
@@ -7647,6 +7615,18 @@ wysihtml5.commands.bold = {
     return p;
   }
 
+  function _firstParentOfKind(node, parentName) {
+      var parentNode;
+      while(node && (parentNode = node.parentNode) && parentNode){
+        if(parentNode.nodeName == parentName){
+          return parentNode;
+        }
+        node = parentNode;
+      }
+
+      return false;
+  }
+
   wysihtml5.commands.formatBlock = {
     exec: function(composer, command, nodeName, className, classRegExp) {
       var doc             = composer.doc,
@@ -7719,25 +7699,19 @@ wysihtml5.commands.bold = {
             if(range.startContainer.nodeName == "BODY" || range.endContainer.nodeName == "BODY"){
                 return;
             }
-              
+             
+            var targetNode;
+            //This is a very, very very ugly thing. I'm sorry I've done it that way, but I had a schedule to accomplish
             if(selectedNode.nodeType == selectedNode.TEXT_NODE && selectedNode.parentNode && selectedNode.parentNode.nodeName === "BODY"){
-              //special case for text node directly inserted inside body
-              range.setStartBefore(selectedNode);
-              range.setEndAfter(selectedNode);
+                range.setStartBefore(selectedNode);
+                range.setEndAfter(selectedNode);
+            } else if((targetNode = _firstParentOfKind(selectedNode, 'LI')) !== false) {
+              range.setStartBefore(targetNode.parentNode);
+              range.setEndAfter(targetNode.parentNode);
             } else if(selectedNode.nodeName == 'UL' || selectedNode.nodeName == 'OL'){
-              //@todo join this case and the previous... this code sucks!
-              range.setStartBefore(selectedNode);
-              range.setEndAfter(selectedNode);
-            } else if(selectedNode.nodeName == 'LI') {
-
-              range.setStartBefore(selectedNode.parentNode);
-              range.setEndAfter(selectedNode.parentNode);
-            } else if(selectedNode.parentNode.nodeName == 'LI'){
-              
-              range.setStartBefore(selectedNode.parentNode.parentNode);
-              range.setEndAfter(selectedNode.parentNode.parentNode);
+                range.setStartBefore(selectedNode);
+                range.setEndAfter(selectedNode);
             } else {
-
               var start = range.startContainer.parentNode && range.startContainer.parentNode.nodeName !== "BODY" ? range.startContainer.parentNode : range.startContainer,
               end = range.endContainer.parentNode && range.endContainer.parentNode.nodeName !== "BODY" ? range.endContainer.parentNode : range.endContainer;
 
@@ -9513,10 +9487,15 @@ wysihtml5.views.View = Base.extend(
 
     dom.observe(element, "keypress", function(event){
       var selNode = that.selection.getSelectedNode(true);
+      var keyCode = event.keyCode;
       if(selNode && selNode.nodeName === "BODY"){
         if(that.selection.getText() === ""){
           event.preventDefault();
         }
+      } else if(selNode && selNode.nodeName === "P" 
+          && (keyCode !== wysihtml5.BACKSPACE_KEY && keyCode !== wysihtml5.DELETE_KEY && keyCode !== wysihtml5.ENTER_KEY)
+          && selNode.firstChild && selNode.firstChild.nodeName === "IMG") {
+        event.preventDefault();
       }
     });
 
@@ -9656,11 +9635,15 @@ wysihtml5.views.View = Base.extend(
       }
     });
 
+    var is_image_node = function(element){
+      return element.firstChild && element.firstChild.nodeName === "IMG";
+    };
     // --------- Make sure that when pressing backspace/delete on selected images deletes the image and it's anchor ---------
     dom.observe(element, "keydown", function(event) {
       var target  = that.selection.getSelectedNode(true),
           keyCode = event.keyCode,
           parent;
+
       if (target && target.nodeName === "IMG" && (keyCode === wysihtml5.BACKSPACE_KEY || keyCode === wysihtml5.DELETE_KEY)) { // 8 => backspace, 46 => delete
         parent = target.parentNode;
         // delete the <img>
@@ -9671,6 +9654,9 @@ wysihtml5.views.View = Base.extend(
         }
 
         setTimeout(function() { wysihtml5.quirks.redraw(element); }, 0);
+        event.preventDefault();
+      } else if((keyCode == wysihtml5.BACKSPACE_KEY && is_image_node(target) && that.selection.getSelection().anchorOffset == 0) 
+          || (keyCode == wysihtml5.DELETE_KEY && is_image_node(target) && that.selection.getSelection().anchorOffset != 0)) {
         event.preventDefault();
       }
     });

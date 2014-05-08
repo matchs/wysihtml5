@@ -290,6 +290,9 @@
       }
     });
 
+    var is_image_node = function(element){
+      return element.firstChild && element.firstChild.nodeName === "IMG";
+    };
     // --------- Make sure that when pressing backspace/delete on selected images deletes the image and it's anchor ---------
     dom.observe(element, "keydown", function(event) {
       var target  = that.selection.getSelectedNode(true),
@@ -306,6 +309,9 @@
         }
 
         setTimeout(function() { wysihtml5.quirks.redraw(element); }, 0);
+        event.preventDefault();
+      } else if((keyCode == wysihtml5.BACKSPACE_KEY && is_image_node(target) && that.selection.getSelection().anchorOffset == 0) 
+          || (keyCode == wysihtml5.DELETE_KEY && is_image_node(target) && that.selection.getSelection().anchorOffset != 0)) {
         event.preventDefault();
       }
     });
