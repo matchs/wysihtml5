@@ -221,7 +221,23 @@
       that.parent.fire("unset_placeholder");
     });
 
-    dom.observe(element, pasteEvents, function() {
+    if(typeof that.config.filterOnPaste === "function"){
+      that.filterOnPaste = function(e){
+        if(e.clipboardData){
+          e.preventDefault();
+          var txt = e.clipboardData.getData('text/html') || e.clipboardData.getData('text');
+          txt = that.config.filterOnPaste(txt);
+         
+          that.commands.exec('insertHTML', txt);
+        }
+      };
+
+    } else {
+      that.filterOnPaste = function(){};
+    }  
+
+    dom.observe(element, pasteEvents, function(e) {
+      that.filterOnPaste(e);
       setTimeout(function() {
         that.parent.fire("paste").fire("paste:composer");
       }, 0);
@@ -311,11 +327,12 @@
         setTimeout(function() { wysihtml5.quirks.redraw(element); }, 0);
         event.preventDefault();
       } else {
-        target = target.nodeName == "P" ? target : that._isChildOfA(target, "P");
-        if((keyCode == wysihtml5.BACKSPACE_KEY && is_image_node(target) && that.selection.getSelection().anchorOffset == 0) 
-          || (keyCode == wysihtml5.DELETE_KEY && is_image_node(target) && that.selection.getSelection().anchorOffset != 0) 
-          || (keyCode == wysihtml5.BACKSPACE_KEY && target.previousSibling &&  is_image_node(target.previousSibling) && that.selection.getSelection().anchorOffset == 0)) {
-          
+        target = target.nodeName == "P" ? target : that._isChildOfA(target, "P");//Getting the first parent paragraph
+        if((keyCode == wysihtml5.BACKSPACE_KEY && is_image_node(target) && that.selection.getSelection().anchorOffset == 0) //Backspace with caret in a image paragraph
+          || (keyCode == wysihtml5.DELETE_KEY && is_image_node(target) && that.selection.getSelection().anchorOffset != 0) //Delete with caret in a image paragraph
+          || (keyCode == wysihtml5.BACKSPACE_KEY && target.previousSibling &&  is_image_node(target.previousSibling) && that.selection.getSelection().anchorOffset == 0)//Backspace with a image paragraph as previous sibling
+          || (keyCode == wysihtml5.DELETE_KEY && target.nextSibling && is_image_node(target.nextSibling) && that.selection.getSelection().anchorOffset == target.innerText.length)) {//Delete with a image paragraph as next sibling
+         
           event.preventDefault();
         }
       }
