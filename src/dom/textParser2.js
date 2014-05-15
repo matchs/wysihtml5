@@ -8,7 +8,7 @@
 wysihtml5.dom.textParser = {};
 wysihtml5.dom.textParser.TEXT_PLACEMENT_MARKUP = '__#txt__';
 wysihtml5.dom.textParser.TEXT_PLACEMENT_MARKUP_REGEX = new RegExp(wysihtml5.dom.textParser.TEXT_PLACEMENT_MARKUP+'$', 'gi');
-wysihtml5.dom.textParser.PRESERVE_MARKUP = '{{PRESERVE}}';
+wysihtml5.dom.textParser.PRESERVE_MARKUP = '{{__##PRESERVE##__}}';
 
 /**
  * Wrote my own fold function. Didn't use native map or filter for old browser compatibility sake
@@ -78,7 +78,7 @@ wysihtml5.dom.textParser.extractText = function(node, preserve){
 wysihtml5.dom.textParser.preserveMarkup = function(text, rule) {
   
   return rule !== undefined ? text.replace(rule, this.PRESERVE_MARKUP) : text;
-}
+};
 
 /**
  * Extracts text that shold preserved from the 
@@ -90,11 +90,11 @@ wysihtml5.dom.textParser.preserveMarkup = function(text, rule) {
 wysihtml5.dom.textParser.extractPreserved = function(node, preserve) {
   var that = this;
   return that.processNode(node, function(cnode){
-
     var preserve_set = [];
     var childNodes = [].slice.call(cnode.childNodes, 0);
     for(var i = 0; i < childNodes.length; i++){
-      preserve_set = preserve_set.concat(that.extractPreserved(childNodes[i], preserve));
+      var y = that.extractPreserved(childNodes[i], preserve);
+      preserve_set = preserve_set.concat(y);
     }
 
     return preserve_set;
@@ -102,7 +102,7 @@ wysihtml5.dom.textParser.extractPreserved = function(node, preserve) {
   }, function(cnode){
     return preserve !== undefined && preserve.test(cnode.textContent) ? cnode.textContent.match(preserve) : [];
   });
-}
+};
 
 /**
  * Returns a string with placement markups of the text nodes in a given node
@@ -139,13 +139,13 @@ wysihtml5.dom.textParser.getNodeMarkupGuts = function(node){
       var childNodes = [].slice.call(node.childNodes, 0);
       var text = '';
       for(var i = 0; i< childNodes.length; i++){
-        text += that.extractNodeMarkup(childNodes[i])
+        text += that.extractNodeMarkup(childNodes[i]);
       }
 
       return text;
 
     })() + '</' + node.nodeName.toLowerCase() + '>';
-}
+};
 
 
 /**
@@ -163,7 +163,7 @@ wysihtml5.dom.textParser.replacePreserved = function(preserved_set, text){
   }
 
   return text;
-}
+};
 
 /**
  * Applies the rules to a given string
@@ -202,8 +202,12 @@ wysihtml5.dom.textParser.parse = function(node, rules, preserve){
     var childNodes = [].slice.call(node.childNodes, 0);
     for(var i = 0; i < childNodes.length; i++){
       templateText += that.extractNodeMarkup(childNodes[i]);
-      preserved_set = preserved_set.concat(that.extractPreserved(childNodes[i], preserve));
-      wholeText += that.extractText(childNodes[i], preserve);;
+      //Insanity. In Firefox 22 for recursion on a three a little wider was "aborting" this call when it was done inline.
+      //This strangely fixes that
+      var x = that.extractPreserved(childNodes[i], preserve);
+      preserved_set = preserved_set.concat(x);
+
+      wholeText += that.extractText(childNodes[i], preserve);
     }
 
     var tokenSet = that.applyRules(//Applying the rules to the text
