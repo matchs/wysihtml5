@@ -5955,7 +5955,7 @@ wysihtml5.dom.replaceAndBecomeChild = function(oldNode, newNode) {
 wysihtml5.dom.textParser = {};
 wysihtml5.dom.textParser.TEXT_PLACEMENT_MARKUP = '__#txt__';
 wysihtml5.dom.textParser.TEXT_PLACEMENT_MARKUP_REGEX = new RegExp(wysihtml5.dom.textParser.TEXT_PLACEMENT_MARKUP+'$', 'gi');
-wysihtml5.dom.textParser.PRESERVE_MARKUP = '{{__##PRESERVE##__}}';
+wysihtml5.dom.textParser.PRESERVE_MARKUP = '{{__PRESERVE__}}';
 
 /**
  * Wrote my own fold function. Didn't use native map or filter for old browser compatibility sake
