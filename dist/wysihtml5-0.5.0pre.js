@@ -6040,14 +6040,18 @@ wysihtml5.dom.textParser.extractPreserved = function(node, preserve) {
     var preserve_set = [];
     var childNodes = [].slice.call(cnode.childNodes, 0);
     for(var i = 0; i < childNodes.length; i++){
-      var y = that.extractPreserved(childNodes[i], preserve);
-      preserve_set = preserve_set.concat(y);
+      preserve_set = preserve_set.concat(that.extractPreserved(childNodes[i], preserve));
     }
 
     return preserve_set;
 
   }, function(cnode){
-    return preserve !== undefined && preserve.test(cnode.textContent) ? cnode.textContent.match(preserve) : [];
+    if(preserve){
+      //This is madness: http://stackoverflow.com/questions/7331753/strange-behavior-of-javascript-regex-test-function
+      preserve.lastIndex = 0;
+      return preserve.test(cnode.textContent) ? cnode.textContent.match(preserve) : [];
+    }
+    return [];
   });
 };
 
@@ -6149,11 +6153,7 @@ wysihtml5.dom.textParser.parse = function(node, rules, preserve){
     var childNodes = [].slice.call(node.childNodes, 0);
     for(var i = 0; i < childNodes.length; i++){
       templateText += that.extractNodeMarkup(childNodes[i]);
-      //Insanity. In Firefox 22 for recursion on a three a little wider was "aborting" this call when it was done inline.
-      //This strangely fixes that
-      var x = that.extractPreserved(childNodes[i], preserve);
-      preserved_set = preserved_set.concat(x);
-
+      preserved_set = preserved_set.concat(that.extractPreserved(childNodes[i], preserve));
       wholeText += that.extractText(childNodes[i], preserve);
     }
 
