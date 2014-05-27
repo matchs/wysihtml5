@@ -210,6 +210,16 @@
         return element;
       }
 
+      this.repositionCaretAtEndOf = function(element){
+        element.focus();
+        var range = that.selection.getRange().cloneRange();
+        range.selectNodeContents(element);
+        range.collapse(false);
+        var sel = that.selection.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      };
+
       //@fixme Refactor to use document fragments for performance improvement
       // Inserts a set of nodes sequentially after currentNode
       this.insertNodes = function(currentNode, nodes){

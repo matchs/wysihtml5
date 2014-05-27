@@ -8697,6 +8697,16 @@ wysihtml5.views.View = Base.extend(
         return element;
       }
 
+      this.repositionCaretAtEndOf = function(element){
+        element.focus();
+        var range = that.selection.getRange().cloneRange();
+        range.selectNodeContents(element);
+        range.collapse(false);
+        var sel = that.selection.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      };
+
       //@fixme Refactor to use document fragments for performance improvement
       // Inserts a set of nodes sequentially after currentNode
       this.insertNodes = function(currentNode, nodes){
@@ -9487,7 +9497,7 @@ wysihtml5.views.View = Base.extend(
       }
 
       return false;
-    }
+    };
 
     dom.observe(element, "keypress", function(event){
       var selNode = that.selection.getSelectedNode(true);
@@ -9687,6 +9697,41 @@ wysihtml5.views.View = Base.extend(
       }
     });
 
+
+    var joinBlockquotes = function(event, target, repositionCaret){
+      if(target.previousSibling && target.previousSibling.nodeName == 'BLOCKQUOTE'
+          && target.nextSibling && target.nextSibling.nodeName == 'BLOCKQUOTE') {
+          // Joining block quotes when deleting paragraph between them with backspace
+          event.preventDefault();
+
+          var frag = that.doc.createDocumentFragment(),
+          prev = target.previousSibling,
+          next = target.nextSibling,
+          cprev = prev.cloneNode(true),
+          cnext = next.cloneNode(true),
+          cp_first = cprev.firstChild,
+          cp_last = cprev.lastChild,
+          cn_first = cnext.firstChild,
+          cn_last = cnext.lastChild,
+          quote = that.doc.createElement('blockquote'),
+          replaceWithChildNodes = wysihtml5.dom.replaceWithChildNodes;
+
+          frag.appendChild(quote);
+          quote.appendChild(cprev);
+          quote.appendChild(cnext);
+
+          replaceWithChildNodes(cprev);
+          replaceWithChildNodes(cnext);
+
+          target.appendChild(frag);
+          replaceWithChildNodes(target);
+
+          prev.parentNode.removeChild(prev);
+          next.parentNode.removeChild(next);
+
+          repositionCaret(quote, [cp_first, cp_last], [cn_first, cn_last]);
+      }
+    };
     // --------- Make sure that when pressing backspace/delete on a blockquote, it is unmade ---------
     dom.observe(element, "keydown", function(event) {
       var target  = that.selection.getSelectedNode(true),
@@ -9694,6 +9739,7 @@ wysihtml5.views.View = Base.extend(
           parent;
       if (keyCode === wysihtml5.BACKSPACE_KEY //if it's pressed backspace
         && that.selection.getSelection().anchorOffset == 0) { //and it's trying to delete it
+
         parent = that._isChildOfA(target,"BLOCKQUOTE");
         if(parent) { //and it's inside a blockquote
           
@@ -9701,10 +9747,20 @@ wysihtml5.views.View = Base.extend(
           range.setStartBefore(parent);
           var content = range.cloneContents();
           if(content.textContent.length <= 0){ //and finally, if it's at the beginning of the blockquote
-            that.parent.toolbar.execCommand("formatBlock","blockquote");
+            that.parent.toolbar.execCommand("formatBlock", "blockquote");
             event.preventDefault();
           }
+        } else {
+          //joining blockquotes when deleting empty p with backspace
+          joinBlockquotes(event, target, function(quote, prev, next){
+            that.parent.composer.repositionCaretAtEndOf(prev[1]);
+          });
         }
+      } else if (keyCode == wysihtml5.DELETE_KEY && that.parent.composer.nodeIsEmpty(target)){
+        //joining blockquotes when deleting empty p with delete
+        joinBlockquotes(event, target, function(quote, prev, next){
+          that.parent.composer.repositionCaretAt(next[0]);
+        });
       }
     });
 
