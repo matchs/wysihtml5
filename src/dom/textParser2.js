@@ -8,7 +8,7 @@
 wysihtml5.dom.textParser = {};
 wysihtml5.dom.textParser.TEXT_PLACEMENT_MARKUP = '__#txt__';
 wysihtml5.dom.textParser.TEXT_PLACEMENT_MARKUP_REGEX = new RegExp(wysihtml5.dom.textParser.TEXT_PLACEMENT_MARKUP+'$', 'gi');
-wysihtml5.dom.textParser.PRESERVE_MARKUP = '{{PRESERVE}}';
+wysihtml5.dom.textParser.PRESERVE_MARKUP = '{{__PRESERVE__}}';
 
 /**
  * Wrote my own fold function. Didn't use native map or filter for old browser compatibility sake
@@ -53,9 +53,6 @@ wysihtml5.dom.textParser.processNode = function(node, elementProcessor, textProc
 wysihtml5.dom.textParser.extractText = function(node, preserve){
   var that = this;
   return that.processNode(node, function(cnode){
-    /*return that.fold([].slice.call(cnode.childNodes, 0), '', function(text, currNode){
-      return text + that.extractText(currNode, preserve);
-    });*/
 
     var childNodes = [].slice.call(cnode.childNodes, 0);
     var text = '';
@@ -81,7 +78,7 @@ wysihtml5.dom.textParser.extractText = function(node, preserve){
 wysihtml5.dom.textParser.preserveMarkup = function(text, rule) {
   
   return rule !== undefined ? text.replace(rule, this.PRESERVE_MARKUP) : text;
-}
+};
 
 /**
  * Extracts text that shold preserved from the 
@@ -93,10 +90,6 @@ wysihtml5.dom.textParser.preserveMarkup = function(text, rule) {
 wysihtml5.dom.textParser.extractPreserved = function(node, preserve) {
   var that = this;
   return that.processNode(node, function(cnode){
-    /*return that.fold([].slice.call(cnode.childNodes, 0), [], function(preserve_set, currNode){
-      return preserve_set.concat(that.extractPreserved(currNode, preserve));
-    });*/
-
     var preserve_set = [];
     var childNodes = [].slice.call(cnode.childNodes, 0);
     for(var i = 0; i < childNodes.length; i++){
@@ -106,9 +99,14 @@ wysihtml5.dom.textParser.extractPreserved = function(node, preserve) {
     return preserve_set;
 
   }, function(cnode){
-    return preserve !== undefined && preserve.test(cnode.textContent) ? cnode.textContent.match(preserve) : [];
+    if(preserve){
+      //This is madness: http://stackoverflow.com/questions/7331753/strange-behavior-of-javascript-regex-test-function
+      preserve.lastIndex = 0;
+      return preserve.test(cnode.textContent) ? cnode.textContent.match(preserve) : [];
+    }
+    return [];
   });
-}
+};
 
 /**
  * Returns a string with placement markups of the text nodes in a given node
@@ -141,20 +139,17 @@ wysihtml5.dom.textParser.getNodeMarkupGuts = function(node){
 
   return !node.firstChild ? '<' + node.nodeName.toLowerCase() + attr + '>'
     : '<' + node.nodeName.toLowerCase() + attr + '>' + (function(){
-      /*return that.fold([].slice.call(node.childNodes, 0), '', function(text, currNode){
-        return text + that.extractNodeMarkup(currNode);
-      });*/
 
       var childNodes = [].slice.call(node.childNodes, 0);
       var text = '';
       for(var i = 0; i< childNodes.length; i++){
-        text += that.extractNodeMarkup(childNodes[i])
+        text += that.extractNodeMarkup(childNodes[i]);
       }
 
       return text;
 
     })() + '</' + node.nodeName.toLowerCase() + '>';
-}
+};
 
 
 /**
@@ -166,16 +161,13 @@ wysihtml5.dom.textParser.getNodeMarkupGuts = function(node){
  */
 wysihtml5.dom.textParser.replacePreserved = function(preserved_set, text){
   var that = this;
-  /*return that.fold(preserved_set, text, function(txt, preserved_item){
-    return txt.replace(that.PRESERVE_MARKUP, preserved_item);
-  });*/
 
   for(var i = 0; i < preserved_set.length; i++){
     text=text.replace(that.PRESERVE_MARKUP, preserved_set[i]);
   }
 
   return text;
-}
+};
 
 /**
  * Applies the rules to a given string
@@ -186,8 +178,6 @@ wysihtml5.dom.textParser.replacePreserved = function(preserved_set, text){
  */
 wysihtml5.dom.textParser.applyRules = function(text, rules){
   var that = this;
-  /*return (rules && rules.length > 0) ?
-    that.applyRules(text.replace(rules[0].rule, rules[0].replace), rules.slice(1, rules.length)) : text;*/
 
   for(var i=0; i < rules.length; i++){
     text = text.replace(rules[i].rule, rules[i].replace);
@@ -211,34 +201,14 @@ wysihtml5.dom.textParser.parse = function(node, rules, preserve){
     /** It's not elegant, I know =(. But it's easier to make it without having to iterate over the node three times. */
     var templateText = '';
     var preserved_set = [];
-    /*var wholeText = that.fold([].slice.call(node.childNodes, 0), '', function(accum, currNode){//Removing the root node from the response
-      templateText += that.extractNodeMarkup(currNode);
-      preserved_set = preserved_set.concat(that.extractPreserved(currNode, preserve));
-      return accum + that.extractText(currNode, preserve);
-    });*/
 
     var wholeText = '';
     var childNodes = [].slice.call(node.childNodes, 0);
     for(var i = 0; i < childNodes.length; i++){
       templateText += that.extractNodeMarkup(childNodes[i]);
       preserved_set = preserved_set.concat(that.extractPreserved(childNodes[i], preserve));
-      wholeText += that.extractText(childNodes[i], preserve);;
+      wholeText += that.extractText(childNodes[i], preserve);
     }
-
-
-    //Replacing the text back in its original position
-    /*var text = (function foldTokens(tokenSet, template){
-      return (tokenSet && tokenSet.length > 0) ?
-        foldTokens(tokenSet.slice(1, tokenSet.length), template.replace(that.TEXT_PLACEMENT_MARKUP, tokenSet[0])) : template;
-
-    })(
-        that.applyRules(//Applying the rules to the text
-          wholeText.replace(that.TEXT_PLACEMENT_MARKUP_REGEX,''), 
-          rules
-        ).split(that.TEXT_PLACEMENT_MARKUP), //Splitting the resulting string
-
-        templateText
-      );*/  
 
     var tokenSet = that.applyRules(//Applying the rules to the text
           wholeText.replace(that.TEXT_PLACEMENT_MARKUP_REGEX,''), 

@@ -210,6 +210,16 @@
         return element;
       }
 
+      this.repositionCaretAtEndOf = function(element){
+        element.focus();
+        var range = that.selection.getRange().cloneRange();
+        range.selectNodeContents(element);
+        range.collapse(false);
+        var sel = that.selection.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      };
+
       //@fixme Refactor to use document fragments for performance improvement
       // Inserts a set of nodes sequentially after currentNode
       this.insertNodes = function(currentNode, nodes){
@@ -562,10 +572,52 @@
 
               return;
             } else if(blockElement.parentNode && blockElement.parentNode.nodeName == "BLOCKQUOTE") {
-              var blockquote = blockElement.parentNode;
-              blockquote.parentNode.insertBefore(blockElement, blockquote.nextSibling);
-              that.repositionCaretAt(blockElement);
-              return;
+              var frag = that.doc.createDocumentFragment(),
+              prev = blockElement.previousSibling;
+              
+              if(prev && !that.nodeIsEmpty(prev)){
+                var prev_quote = that.doc.createElement('blockquote');
+                while(prev){
+                  prev_quote.appendChild(prev.cloneNode(true));
+                  prev = prev.previousSibling;
+                }
+
+                frag.appendChild(prev_quote);
+              } else {
+              
+                return;
+              }
+
+              var next = blockElement.nextSibling;
+              if(next && !that.nodeIsEmpty(next)){
+                var next_quote = that.doc.createElement('blockquote');
+                while(next){
+                  next_quote.appendChild(next.cloneNode(true));
+                  next = next.nextSibling;
+                }
+
+                frag.appendChild(next_quote);
+              } else {
+                
+                var blockquote = blockElement.parentNode;
+                blockquote.parentNode.insertBefore(blockElement, blockquote.nextSibling);
+                that.repositionCaretAt(blockElement);
+                return;
+              }
+              
+              if(frag.firstChild){
+                var p;
+                if(frag.childNodes.length > 1){
+                  p = that.makeEmptyParagraph();
+                  frag.insertBefore(p, frag.lastChild);
+                }
+                
+                that.replaceNodeWith(blockElement.parentNode, [frag]);
+
+                if(p){
+                  that.repositionCaretAt(p);
+                }
+              } 
 
             }
           } else  if(event.shiftKey && event.keyCode == wysihtml5.ENTER_KEY) {

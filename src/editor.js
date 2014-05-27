@@ -87,7 +87,10 @@
     caretOffset: {
       left:3,
       right:3
-    }
+    },
+
+    filterOnPaste : false
+  
   };
   
   wysihtml5.Editor = wysihtml5.lang.Dispatcher.extend(

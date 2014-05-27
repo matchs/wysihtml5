@@ -138,14 +138,19 @@
       }
 
       return false;
-    }
+    };
 
     dom.observe(element, "keypress", function(event){
       var selNode = that.selection.getSelectedNode(true);
+      var keyCode = event.keyCode;
       if(selNode && selNode.nodeName === "BODY"){
         if(that.selection.getText() === ""){
           event.preventDefault();
         }
+      } else if(selNode && selNode.nodeName === "P" 
+          && (keyCode !== wysihtml5.BACKSPACE_KEY && keyCode !== wysihtml5.DELETE_KEY && keyCode !== wysihtml5.ENTER_KEY)
+          && selNode.firstChild && selNode.firstChild.nodeName === "IMG") {
+        event.preventDefault();
       }
     });
 
@@ -216,7 +221,23 @@
       that.parent.fire("unset_placeholder");
     });
 
-    dom.observe(element, pasteEvents, function() {
+    if(typeof that.config.filterOnPaste === "function"){
+      that.filterOnPaste = function(e){
+        if(e.clipboardData){
+          e.preventDefault();
+          var txt = e.clipboardData.getData('text/html') || e.clipboardData.getData('text');
+          txt = that.config.filterOnPaste(txt);
+         
+          that.commands.exec('insertHTML', txt);
+        }
+      };
+
+    } else {
+      that.filterOnPaste = function(){};
+    }  
+
+    dom.observe(element, pasteEvents, function(e) {
+      that.filterOnPaste(e);
       setTimeout(function() {
         that.parent.fire("paste").fire("paste:composer");
       }, 0);
@@ -285,11 +306,15 @@
       }
     });
 
+    var is_image_node = function(element){
+      return element.firstChild && element.firstChild.nodeName === "IMG";
+    };
     // --------- Make sure that when pressing backspace/delete on selected images deletes the image and it's anchor ---------
     dom.observe(element, "keydown", function(event) {
       var target  = that.selection.getSelectedNode(true),
           keyCode = event.keyCode,
           parent;
+
       if (target && target.nodeName === "IMG" && (keyCode === wysihtml5.BACKSPACE_KEY || keyCode === wysihtml5.DELETE_KEY)) { // 8 => backspace, 46 => delete
         parent = target.parentNode;
         // delete the <img>
@@ -301,9 +326,64 @@
 
         setTimeout(function() { wysihtml5.quirks.redraw(element); }, 0);
         event.preventDefault();
+      } else {
+        target = target.nodeName == "P" ? target : that._isChildOfA(target, "P");//Getting the first parent paragraph
+        if((keyCode == wysihtml5.BACKSPACE_KEY && is_image_node(target) && that.selection.getSelection().anchorOffset == 0) //Backspace with caret in a image paragraph
+          || (keyCode == wysihtml5.DELETE_KEY && is_image_node(target) && that.selection.getSelection().anchorOffset != 0) //Delete with caret in a image paragraph
+          || (keyCode == wysihtml5.BACKSPACE_KEY && target.previousSibling &&  is_image_node(target.previousSibling) && that.selection.getSelection().anchorOffset == 0)//Backspace with a image paragraph as previous sibling
+          || (keyCode == wysihtml5.DELETE_KEY && target.nextSibling && is_image_node(target.nextSibling) && that.selection.getSelection().anchorOffset == target.innerText.length)) {//Delete with a image paragraph as next sibling
+         
+          event.preventDefault();
+        }
       }
     });
 
+    //joins two adjacent bloquotes together
+    var joinBlockquotes = function(event, target, repositionCaret){
+      if(target.previousSibling && target.previousSibling.nodeName == 'BLOCKQUOTE'
+          && target.nextSibling && target.nextSibling.nodeName == 'BLOCKQUOTE') {
+          // Joining block quotes when deleting paragraph between them with backspace
+          event.preventDefault();
+
+          var frag = that.doc.createDocumentFragment(),
+          prev = target.previousSibling,
+          next = target.nextSibling,
+          cprev = prev.cloneNode(true),
+          cnext = next.cloneNode(true),
+          cp_first = cprev.firstChild,
+          cp_last = cprev.lastChild,
+          cn_first = cnext.firstChild,
+          cn_last = cnext.lastChild,
+          quote = that.doc.createElement('blockquote'),
+          replaceWithChildNodes = wysihtml5.dom.replaceWithChildNodes;
+
+          frag.appendChild(quote);
+          quote.appendChild(cprev);
+          quote.appendChild(cnext);
+
+          replaceWithChildNodes(cprev);
+          replaceWithChildNodes(cnext);
+
+          target.appendChild(frag);
+          replaceWithChildNodes(target);
+
+          prev.parentNode.removeChild(prev);
+          next.parentNode.removeChild(next);
+
+          repositionCaret(quote, [cp_first, cp_last], [cn_first, cn_last]);
+      }
+    };
+
+    this.joinBlockquotes = joinBlockquotes;
+
+    var repositionCaretBefore = function(quote, prev, next){
+        that.parent.composer.repositionCaretAtEndOf(prev[1]);
+    };
+
+    var repositionCaretAfter = function(quote, prev, next){
+        that.parent.composer.repositionCaretAt(next[0]);
+    };
+    
     // --------- Make sure that when pressing backspace/delete on a blockquote, it is unmade ---------
     dom.observe(element, "keydown", function(event) {
       var target  = that.selection.getSelectedNode(true),
@@ -311,16 +391,30 @@
           parent;
       if (keyCode === wysihtml5.BACKSPACE_KEY //if it's pressed backspace
         && that.selection.getSelection().anchorOffset == 0) { //and it's trying to delete it
-        parent = that._isChildOfA(target,"BLOCKQUOTE");
+
+        parent = that._isChildOfA(target, "BLOCKQUOTE");
         if(parent) { //and it's inside a blockquote
-          
-          var range = that.selection.getRange();
-          range.setStartBefore(parent);
-          var content = range.cloneContents();
-          if(content.textContent.length <= 0){ //and finally, if it's at the beginning of the blockquote
-            that.parent.toolbar.execCommand("formatBlock","blockquote");
-            event.preventDefault();
+          var prev = parent.previousSibling;
+          if(prev && prev.nodeName == "P" && that.parent.composer.nodeIsEmpty(prev)) {
+            joinBlockquotes(event, prev, repositionCaretBefore);            
           }
+
+        } else if(that.parent.composer.nodeIsEmpty(target)) {
+          //joining blockquotes when deleting empty p with backspace
+          joinBlockquotes(event, target, repositionCaretBefore);
+        }
+      } else if (keyCode == wysihtml5.DELETE_KEY){
+
+        parent = that._isChildOfA(target, "BLOCKQUOTE");
+        if(parent) {
+          var next = parent.nextSibling;
+          if(next && next.nodeName == "P" && that.parent.composer.nodeIsEmpty(next)) {
+            joinBlockquotes(event, next, repositionCaretAfter);
+          }
+
+        } else if(that.parent.composer.nodeIsEmpty(target)) {
+          //joining blockquotes when deleting empty p with delete
+          joinBlockquotes(event, target, repositionCaretAfter);  
         }
       }
     });
