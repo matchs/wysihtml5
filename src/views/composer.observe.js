@@ -338,7 +338,7 @@
       }
     });
 
-
+    //joins two adjacent bloquotes together
     var joinBlockquotes = function(event, target, repositionCaret){
       if(target.previousSibling && target.previousSibling.nodeName == 'BLOCKQUOTE'
           && target.nextSibling && target.nextSibling.nodeName == 'BLOCKQUOTE') {
@@ -373,6 +373,17 @@
           repositionCaret(quote, [cp_first, cp_last], [cn_first, cn_last]);
       }
     };
+
+    this.joinBlockquotes = joinBlockquotes;
+
+    var repositionCaretBefore = function(quote, prev, next){
+        that.parent.composer.repositionCaretAtEndOf(prev[1]);
+    };
+
+    var repositionCaretAfter = function(quote, prev, next){
+        that.parent.composer.repositionCaretAt(next[0]);
+    };
+    
     // --------- Make sure that when pressing backspace/delete on a blockquote, it is unmade ---------
     dom.observe(element, "keydown", function(event) {
       var target  = that.selection.getSelectedNode(true),
@@ -381,27 +392,30 @@
       if (keyCode === wysihtml5.BACKSPACE_KEY //if it's pressed backspace
         && that.selection.getSelection().anchorOffset == 0) { //and it's trying to delete it
 
-        parent = that._isChildOfA(target,"BLOCKQUOTE");
+        parent = that._isChildOfA(target, "BLOCKQUOTE");
         if(parent) { //and it's inside a blockquote
-          
-          var range = that.selection.getRange();
-          range.setStartBefore(parent);
-          var content = range.cloneContents();
-          if(content.textContent.length <= 0){ //and finally, if it's at the beginning of the blockquote
-            that.parent.toolbar.execCommand("formatBlock", "blockquote");
-            event.preventDefault();
+          var prev = parent.previousSibling;
+          if(prev && prev.nodeName == "P" && that.parent.composer.nodeIsEmpty(prev)) {
+            joinBlockquotes(event, prev, repositionCaretBefore);            
           }
-        } else {
+
+        } else if(that.parent.composer.nodeIsEmpty(target)) {
           //joining blockquotes when deleting empty p with backspace
-          joinBlockquotes(event, target, function(quote, prev, next){
-            that.parent.composer.repositionCaretAtEndOf(prev[1]);
-          });
+          joinBlockquotes(event, target, repositionCaretBefore);
         }
-      } else if (keyCode == wysihtml5.DELETE_KEY && that.parent.composer.nodeIsEmpty(target)){
-        //joining blockquotes when deleting empty p with delete
-        joinBlockquotes(event, target, function(quote, prev, next){
-          that.parent.composer.repositionCaretAt(next[0]);
-        });
+      } else if (keyCode == wysihtml5.DELETE_KEY){
+
+        parent = that._isChildOfA(target, "BLOCKQUOTE");
+        if(parent) {
+          var next = parent.nextSibling;
+          if(next && next.nodeName == "P" && that.parent.composer.nodeIsEmpty(next)) {
+            joinBlockquotes(event, next, repositionCaretAfter);
+          }
+
+        } else if(that.parent.composer.nodeIsEmpty(target)) {
+          //joining blockquotes when deleting empty p with delete
+          joinBlockquotes(event, target, repositionCaretAfter);  
+        }
       }
     });
 

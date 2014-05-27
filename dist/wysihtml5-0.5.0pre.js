@@ -9059,10 +9059,52 @@ wysihtml5.views.View = Base.extend(
 
               return;
             } else if(blockElement.parentNode && blockElement.parentNode.nodeName == "BLOCKQUOTE") {
-              var blockquote = blockElement.parentNode;
-              blockquote.parentNode.insertBefore(blockElement, blockquote.nextSibling);
-              that.repositionCaretAt(blockElement);
-              return;
+              var frag = that.doc.createDocumentFragment(),
+              prev = blockElement.previousSibling;
+              
+              if(prev && !that.nodeIsEmpty(prev)){
+                var prev_quote = that.doc.createElement('blockquote');
+                while(prev){
+                  prev_quote.appendChild(prev.cloneNode(true));
+                  prev = prev.previousSibling;
+                }
+
+                frag.appendChild(prev_quote);
+              } else {
+              
+                return;
+              }
+
+              var next = blockElement.nextSibling;
+              if(next && !that.nodeIsEmpty(next)){
+                var next_quote = that.doc.createElement('blockquote');
+                while(next){
+                  next_quote.appendChild(next.cloneNode(true));
+                  next = next.nextSibling;
+                }
+
+                frag.appendChild(next_quote);
+              } else {
+                
+                var blockquote = blockElement.parentNode;
+                blockquote.parentNode.insertBefore(blockElement, blockquote.nextSibling);
+                that.repositionCaretAt(blockElement);
+                return;
+              }
+              
+              if(frag.firstChild){
+                var p;
+                if(frag.childNodes.length > 1){
+                  p = that.makeEmptyParagraph();
+                  frag.insertBefore(p, frag.lastChild);
+                }
+                
+                that.replaceNodeWith(blockElement.parentNode, [frag]);
+
+                if(p){
+                  that.repositionCaretAt(p);
+                }
+              } 
 
             }
           } else  if(event.shiftKey && event.keyCode == wysihtml5.ENTER_KEY) {
@@ -9697,7 +9739,7 @@ wysihtml5.views.View = Base.extend(
       }
     });
 
-
+    //joins two adjacent bloquotes together
     var joinBlockquotes = function(event, target, repositionCaret){
       if(target.previousSibling && target.previousSibling.nodeName == 'BLOCKQUOTE'
           && target.nextSibling && target.nextSibling.nodeName == 'BLOCKQUOTE') {
@@ -9732,6 +9774,17 @@ wysihtml5.views.View = Base.extend(
           repositionCaret(quote, [cp_first, cp_last], [cn_first, cn_last]);
       }
     };
+
+    this.joinBlockquotes = joinBlockquotes;
+
+    var repositionCaretBefore = function(quote, prev, next){
+        that.parent.composer.repositionCaretAtEndOf(prev[1]);
+    };
+
+    var repositionCaretAfter = function(quote, prev, next){
+        that.parent.composer.repositionCaretAt(next[0]);
+    };
+    
     // --------- Make sure that when pressing backspace/delete on a blockquote, it is unmade ---------
     dom.observe(element, "keydown", function(event) {
       var target  = that.selection.getSelectedNode(true),
@@ -9740,27 +9793,30 @@ wysihtml5.views.View = Base.extend(
       if (keyCode === wysihtml5.BACKSPACE_KEY //if it's pressed backspace
         && that.selection.getSelection().anchorOffset == 0) { //and it's trying to delete it
 
-        parent = that._isChildOfA(target,"BLOCKQUOTE");
+        parent = that._isChildOfA(target, "BLOCKQUOTE");
         if(parent) { //and it's inside a blockquote
-          
-          var range = that.selection.getRange();
-          range.setStartBefore(parent);
-          var content = range.cloneContents();
-          if(content.textContent.length <= 0){ //and finally, if it's at the beginning of the blockquote
-            that.parent.toolbar.execCommand("formatBlock", "blockquote");
-            event.preventDefault();
+          var prev = parent.previousSibling;
+          if(prev && prev.nodeName == "P" && that.parent.composer.nodeIsEmpty(prev)) {
+            joinBlockquotes(event, prev, repositionCaretBefore);            
           }
-        } else {
+
+        } else if(that.parent.composer.nodeIsEmpty(target)) {
           //joining blockquotes when deleting empty p with backspace
-          joinBlockquotes(event, target, function(quote, prev, next){
-            that.parent.composer.repositionCaretAtEndOf(prev[1]);
-          });
+          joinBlockquotes(event, target, repositionCaretBefore);
         }
-      } else if (keyCode == wysihtml5.DELETE_KEY && that.parent.composer.nodeIsEmpty(target)){
-        //joining blockquotes when deleting empty p with delete
-        joinBlockquotes(event, target, function(quote, prev, next){
-          that.parent.composer.repositionCaretAt(next[0]);
-        });
+      } else if (keyCode == wysihtml5.DELETE_KEY){
+
+        parent = that._isChildOfA(target, "BLOCKQUOTE");
+        if(parent) {
+          var next = parent.nextSibling;
+          if(next && next.nodeName == "P" && that.parent.composer.nodeIsEmpty(next)) {
+            joinBlockquotes(event, next, repositionCaretAfter);
+          }
+
+        } else if(that.parent.composer.nodeIsEmpty(target)) {
+          //joining blockquotes when deleting empty p with delete
+          joinBlockquotes(event, target, repositionCaretAfter);  
+        }
       }
     });
 
