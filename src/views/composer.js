@@ -577,8 +577,10 @@
               
               if(prev && !that.nodeIsEmpty(prev)){
                 var prev_quote = that.doc.createElement('blockquote');
+                prev_quote.appendChild(prev.cloneNode(true));
+                prev = prev.previousSibling;
                 while(prev){
-                  prev_quote.appendChild(prev.cloneNode(true));
+                  prev_quote.insertBefore(prev.cloneNode(true), prev_quote.firstChild);
                   prev = prev.previousSibling;
                 }
 
