@@ -6084,7 +6084,7 @@ wysihtml5.dom.textParser.getNodeMarkupGuts = function(node){
   var that = this,
       attr = node.attributes.length > 0 ? node.outerHTML.match(/ .*?(?=>)/)[0] : '';
 
-  return !node.firstChild ? '<' + node.nodeName.toLowerCase() + attr + '>'
+  return !node.firstChild ? node.outerHTML
     : '<' + node.nodeName.toLowerCase() + attr + '>' + (function(){
 
       var childNodes = [].slice.call(node.childNodes, 0);
