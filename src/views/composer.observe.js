@@ -168,22 +168,33 @@
         }
       };
 
+      var registerResizeEvents = function(){
+        var elems = element.querySelectorAll('img, iframe');
+        for(var i in elems){
+          elems[i].onload = that.doResize;
+          if(elems[i].complete && elems[i].naturalWidth !== 0){
+            that.doResize();
+          }
+        }
+        that.doResize();
+      };
+
       //resizing on startup
       this.doResize();
-      dom.observe(element, ["imageloaded:composer", "change:composer", "keyup", "keydown", "paste", "change", "focus", "blur"], that.doResize);
+      dom.observe(element, ["imageloaded:composer", "change:composer", "keyup", "keydown", "paste", "change"], that.doResize);
       that.parent.on("disable:composer", that.doResize);
       that.parent.on("enable:composer", that.doResize);
-      that.parent.on("imageloaded:composer", that.doResize);
       that.parent.on("beforeload", that.doResize);
-      that.parent.on("load", that.doResize);
-      that.parent.on("aftercommand:composer", that.doResize);
+      that.parent.on("load", registerResizeEvents);
+      that.parent.on("focus", registerResizeEvents);
+      that.parent.on("blur", registerResizeEvents);
+      that.parent.on("aftercommand:composer", registerResizeEvents);
       that.parent.on("change:composer", that.doResize);
       that.parent.on("newword:composer", that.doResize);
       that.parent.on("change", that.doResize);
-      that.parent.on('imageloaded:composer',that.doResize);
 
     } else {
-      this.doResize = function() {}
+      this.doResize = function() {};
     }
 
     // --------- destroy:composer event ---------
