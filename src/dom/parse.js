@@ -51,6 +51,7 @@
  */
 wysihtml5.dom.parse = (function() {
 
+  var PLACEHOLDER_CLASS = "_wysihtml5-temp-placeholder";
   var ALLOWED_EMPTY_NODES_REGEX = new RegExp("\<img|\<iframe|\<video|\<hr|\<canvas",'i');
   var ALLOWED_EMPTY_NODENAMES_REGEX = new RegExp("img|iframe|video|hr|canvas|br");
   //This is really not a good technique.
@@ -69,6 +70,9 @@ wysihtml5.dom.parse = (function() {
         return res;
 
       case wysihtml5.ELEMENT_NODE: //element
+        if(node.getAttribute('class') == PLACEHOLDER_CLASS){
+          return false;
+        }
         var innerHTML = node.innerHTML;
         var innerText = wysihtml5.dom.getTextContent(node);
         return (!ALLOWED_EMPTY_NODENAMES_REGEX.test(node.nodeName.toLowerCase()))
@@ -76,6 +80,7 @@ wysihtml5.dom.parse = (function() {
           && (innerHTML !== undefined && !ALLOWED_EMPTY_NODES_REGEX.test(innerHTML));
 
       case wysihtml5.TEXT_NODE: //#text
+        return false;
         return node.wholeText.replace(/\s/g,'').length == 0;
     }
   }
@@ -358,7 +363,7 @@ wysihtml5.dom.parse = (function() {
     }
     
     // make sure that wysihtml5 temp class doesn't get stripped out
-    allowedClasses["_wysihtml5-temp-placeholder"] = 1;
+    allowedClasses[PLACEHOLDER_CLASS] = 1;
     
     // add old classes last
     oldClasses = oldNode.getAttribute("class");
