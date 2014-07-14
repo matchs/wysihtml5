@@ -81,7 +81,6 @@ wysihtml5.dom.parse = (function() {
 
       case wysihtml5.TEXT_NODE: //#text
         return false;
-        return node.wholeText.replace(/\s/g,'').length == 0;
     }
   }
   
